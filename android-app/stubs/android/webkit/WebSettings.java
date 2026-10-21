@@ -7,4 +7,6 @@ public class WebSettings {
     public void setBuiltInZoomControls(boolean b) {}
     public void setDatabaseEnabled(boolean b) {}
     public void setMediaPlaybackRequiresUserGesture(boolean b) {}
+    public void setAllowFileAccessFromFileURLs(boolean b) {}
+    public void setAllowUniversalAccessFromFileURLs(boolean b) {}
 }

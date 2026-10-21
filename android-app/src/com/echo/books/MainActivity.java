@@ -22,6 +22,8 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
         
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("file:///android_asset/www/echo-books.html");

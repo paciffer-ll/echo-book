@@ -85,8 +85,8 @@
   #readerView{position:fixed;inset:0;z-index:3;display:none}
   #readerView.active{display:block}
   #epubViewer{position:absolute;inset:0;z-index:1}
-  #pdfCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;display:none;max-width:94%;max-height:88%;box-shadow:0 8px 48px rgba(0,0,0,.5);border-radius:4px}
-  #slideViewer{position:absolute;inset:0;z-index:1;display:none;overflow-y:auto;padding:40px 20px}
+  #pdfCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;max-width:94%;max-height:88%;box-shadow:0 8px 48px rgba(0,0,0,.5);border-radius:4px}
+  #slideViewer{position:absolute;inset:0;z-index:1;overflow-y:auto;padding:40px 20px}
   .slide-card{
     background:var(--surface);border:1px solid var(--border);border-radius:8px;
     padding:40px 56px;max-width:760px;margin:0 auto 24px;min-height:420px;
@@ -306,6 +306,7 @@
 <script src="libs/jszip.min.js"></script>
 <script src="libs/epub.min.js"></script>
 <script src="libs/pdf.min.js"></script>
+<script src="libs/pdf.worker.min.js"></script>
 <script>
 if(typeof pdfjsLib !== 'undefined')
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'libs/pdf.worker.min.js';
@@ -692,7 +693,17 @@ if(typeof pdfjsLib !== 'undefined')
     readerState.epubRendition.themes.select(currentTheme);
     readerState.epubRendition.display(stored.position || undefined);
     readerState.epubRendition.on('rendered',(s,view)=>{
-      try{ const d=view.document; if(d){d.documentElement.style.background='transparent';d.body.style.background='transparent';}}catch(e){}
+      try{
+        const d = view.document;
+        if(d){
+          d.documentElement.style.background='transparent';
+          d.body.style.background='transparent';
+          if(!d.documentElement.__swipeBound){
+            d.documentElement.__swipeBound = true;
+            bindSwipe(d.documentElement, null);
+          }
+        }
+      }catch(e){}
     });
     readerState.epubRendition.on('relocated', async loc=>{
       if(!loc||!loc.start) return;
@@ -711,7 +722,7 @@ if(typeof pdfjsLib !== 'undefined')
 
   // ---- PDF ----
   async function openPdf(stored){
-    document.getElementById('pdfCanvas').style.display = '';
+    document.getElementById('pdfCanvas').style.display = 'block';
     const copy = stored.data.slice(0);
     readerState.pdfDoc = await pdfjsLib.getDocument({ data: copy }).promise;
     readerState.pdfPage = stored.position || 1;
@@ -759,7 +770,7 @@ if(typeof pdfjsLib !== 'undefined')
 
   // ---- PPTX ----
   async function openPptx(stored){
-    document.getElementById('slideViewer').style.display = '';
+    document.getElementById('slideViewer').style.display = 'block';
     readerState.pptxSlides = await parsePptxSlides(stored.data);
     readerState.pptxSlide = stored.position || 0;
     renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide] || [], readerState.pptxSlide, readerState.pptxSlides.length);
@@ -1046,36 +1057,39 @@ if(typeof pdfjsLib !== 'undefined')
   });
   document.getElementById('readerView').addEventListener('mousemove', showUI);
 
-  // ===== 触摸滑动翻页（手机） =====
-  let touchX = 0, touchY = 0, touchT = 0;
-  const rv = document.getElementById('readerView');
-  rv.addEventListener('touchstart', e => {
-    touchX = e.touches[0].clientX;
-    touchY = e.touches[0].clientY;
-    touchT = Date.now();
-  }, { passive: true });
-  rv.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchX;
-    const dy = e.changedTouches[0].clientY - touchY;
-    const dt = Date.now() - touchT;
-    // 水平滑动：左右翻页
-    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5){
-      if(dx > 0) goPrev(); else goNext();
-    }
-    // 点击：切换 UI 显示
-    else if(dt < 300 && Math.abs(dx) < 15 && Math.abs(dy) < 15){
-      // 中心点击才切换，边缘留给按钮
-      const cx = innerWidth / 2;
-      if(Math.abs(touchX - cx) < innerWidth * 0.3){
-        const tb = document.getElementById('readerTopbar');
-        if(tb.classList.contains('hidden')) showUI();
-        else { tb.classList.add('hidden'); document.getElementById('readerControls').classList.add('hidden'); }
-      } else {
-        showUI();
+  // ===== 滑动翻页（触摸 + 鼠标拖拽，EPUB/PDF/PPT 通用） =====
+  let lastTurn = 0;
+  function turnOk(){ const n = Date.now(); if(n - lastTurn < 450) return false; lastTurn = n; return true; }
+  function turnNext(){ if(turnOk()) goNext(); }
+  function turnPrev(){ if(turnOk()) goPrev(); }
+
+  function bindSwipe(el, tapFn){
+    let sx=0, sy=0, st=0, id=null;
+    el.addEventListener('pointerdown', e => { sx=e.clientX; sy=e.clientY; st=Date.now(); id=e.pointerId; }, {passive:true});
+    el.addEventListener('pointerup', e => {
+      if(id!==null && e.pointerId!==id) return; id=null;
+      const dx=e.clientX-sx, dy=e.clientY-sy, dt=Date.now()-st;
+      // 水平滑动 → 翻页
+      if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
+        if(dx<0) turnNext(); else turnPrev();
+        return;
       }
-    }
-    showUI();
-  }, { passive: true });
+      // 轻点中心 → 显示/隐藏控件
+      if(dt<300 && Math.abs(dx)<15 && Math.abs(dy)<15 && tapFn) tapFn(sx);
+      else showUI();
+    }, {passive:true});
+  }
+
+  function tapToggle(sx){
+    const cx = innerWidth/2;
+    const tb = document.getElementById('readerTopbar');
+    if(Math.abs(sx-cx) < innerWidth*0.3){
+      if(tb.classList.contains('hidden')) showUI();
+      else { tb.classList.add('hidden'); document.getElementById('readerControls').classList.add('hidden'); clearTimeout(hideTimer); }
+    } else showUI();
+  }
+
+  bindSwipe(document.getElementById('readerView'), tapToggle);
 
   // 阻止移动端双击缩放
   let lastTouchEnd = 0;
