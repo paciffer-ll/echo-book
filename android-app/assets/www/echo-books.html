@@ -45,38 +45,45 @@
     cursor:pointer;transition:background .2s,color .2s;
   }
   .btn-import:hover{background:rgba(139,142,219,.18);color:#c0c4f0}
-  .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:28px 24px;padding:8px 36px 48px}
-  .book-card{cursor:pointer;transition:transform .35s cubic-bezier(.25,.1,.25,1)}
-  .book-card:hover{transform:translateY(-6px)}
-  .book-cover-wrap{
-    position:relative;aspect-ratio:2/3;border-radius:4px;overflow:hidden;
-    box-shadow:0 6px 24px rgba(0,0,0,.45);transition:box-shadow .35s;
+
+  /* ===== 书架 — Folia 风格：英雄区 + 流动横滑条 ===== */
+  .lib-hero{
+    position:relative;margin:0 36px 4px;height:300px;border-radius:16px;overflow:hidden;
+    border:1px solid var(--border);box-shadow:0 12px 48px rgba(0,0,0,.4);
   }
-  .book-card:hover .book-cover-wrap{box-shadow:0 12px 48px var(--accent-glow),0 4px 16px rgba(0,0,0,.4)}
-  .book-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
-  .book-cover-placeholder{
-    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-    padding:16px;text-align:center;font-size:14px;font-weight:600;color:rgba(255,255,255,.75);line-height:1.4;
-  }
-  .type-badge{
-    position:absolute;top:6px;left:6px;padding:2px 6px;border-radius:3px;
-    font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
-  }
-  .type-badge.epub{background:var(--epub);color:#fff}
-  .type-badge.pdf{background:var(--pdf);color:#fff}
-  .type-badge.pptx{background:var(--ppt);color:#000}
-  .book-progress-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);opacity:.8;transition:width .3s}
-  .book-delete{
-    position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;
-    background:rgba(0,0,0,.6);color:#aaa;border:none;cursor:pointer;font-size:14px;line-height:1;
-    display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s,color .2s;
-  }
-  .book-card:hover .book-delete{opacity:1}
-  .book-delete:hover{color:#ff6b6b;background:rgba(0,0,0,.8)}
-  .book-info{margin-top:10px}
-  .book-title{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .book-author{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lib-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3)}
+  .lib-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(36px) saturate(1.4);transform:scale(1.3);opacity:.55}
+  .lib-hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,8,15,.92) 30%,rgba(8,8,15,.3))}
+  .lib-hero-content{position:relative;display:flex;align-items:center;gap:36px;height:100%;padding:36px 44px}
+  .lib-hero-cover{width:150px;aspect-ratio:2/3;border-radius:8px;object-fit:cover;box-shadow:0 16px 48px rgba(0,0,0,.7);flex-shrink:0}
+  .lib-hero-info{flex:1;min-width:0}
+  .lib-hero-info h2{font-size:27px;font-weight:600;color:#fff;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-hero-info .sub{color:var(--text2);font-size:14px;margin-bottom:14px}
+  .lib-hero-progress{height:3px;width:220px;background:rgba(255,255,255,.12);border-radius:2px;margin-bottom:18px;overflow:hidden}
+  .lib-hero-progress>div{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+  .lib-hero-continue{background:var(--accent);color:#fff;border:none;border-radius:22px;padding:11px 26px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s,box-shadow .2s}
+  .lib-hero-continue:hover{transform:scale(1.05);box-shadow:0 8px 28px var(--accent-glow)}
+
+  .lib-section{padding:0 36px}
+  .lib-section-title{font-size:14px;font-weight:500;color:var(--text2);letter-spacing:1px;margin:28px 0 2px;padding-left:4px}
+  .lib-strip{display:flex;gap:18px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;padding:14px 4px 22px;scroll-snap-type:x proximity}
+  .lib-strip::-webkit-scrollbar{height:0}
+  .lib-card{flex:0 0 auto;width:132px;scroll-snap-align:start;cursor:pointer}
+  .lib-card .cover-wrap{position:relative;aspect-ratio:2/3;border-radius:6px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.25,.1,.25,1),box-shadow .35s}
+  .lib-card:hover .cover-wrap{transform:translateY(-10px) scale(1.04);box-shadow:0 18px 50px var(--accent-glow),0 6px 20px rgba(0,0,0,.5)}
+  .lib-card .cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .lib-card .cover-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;font-size:13px;font-weight:600;color:rgba(255,255,255,.78);line-height:1.4}
+  .lib-card .badge{position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase}
+  .lib-card .badge.epub{background:var(--epub);color:#fff}
+  .lib-card .badge.pdf{background:var(--pdf);color:#fff}
+  .lib-card .badge.pptx{background:var(--ppt);color:#000}
+  .lib-card .pbar{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);opacity:.85}
+  .lib-card .del{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.65);color:#aaa;border:none;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+  .lib-card:hover .del{opacity:1}
+  .lib-card .del:hover{color:#ff6b6b}
+  .lib-card .info{margin-top:8px}
+  .lib-card .title{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-card .author{font-size:10px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--text3)}
   .lib-empty .empty-icon{font-size:64px;margin-bottom:16px;opacity:.3}
   .lib-empty p{font-size:15px}
   .lib-empty .empty-hint{font-size:12px;margin-top:6px;color:var(--text3)}
@@ -167,9 +174,14 @@
     .lib-header{padding:16px 14px 12px}
     .lib-header h1{font-size:18px}
     .btn-import{padding:6px 14px;font-size:12px}
-    .lib-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px 12px;padding:6px 14px 32px}
-    .book-title{font-size:12px}
-    .book-author{font-size:10px}
+    .lib-hero{margin:0 14px 4px;height:240px}
+    .lib-hero-content{padding:20px;gap:20px}
+    .lib-hero-cover{width:100px}
+    .lib-hero-info h2{font-size:20px}
+    .lib-section{padding:0 14px}
+    .lib-card{width:108px}
+    .lib-card .title{font-size:11px}
+    .lib-card .author{font-size:9px}
 
     .reader-topbar{padding:12px 16px}
     .reader-controls{padding:12px 16px 18px}
@@ -246,12 +258,16 @@
     <h1>Echo <span>Books</span></h1>
     <button class="btn-import" id="btnImport">＋ 导入书籍</button>
   </header>
-  <div class="lib-grid" id="libGrid"></div>
-  <div class="lib-empty" id="libEmpty">
+  <div class="lib-hero" id="libHero" style="display:none">
+    <div class="lib-hero-bg" id="libHeroBg"></div>
+    <div class="lib-hero-content" id="libHeroContent"></div>
+  </div>
+  <div class="lib-empty" id="libEmpty" style="display:none">
     <div class="empty-icon">📖</div>
     <p>还没有书籍</p>
     <p class="empty-hint">支持 EPUB / PDF / PPTX — 点击导入或直接拖入</p>
   </div>
+  <div id="libSections"></div>
 </div>
 
 <!-- 阅读器 -->
@@ -579,33 +595,117 @@ if(typeof pdfjsLib !== 'undefined')
   async function refreshLibrary(){
     const books = await dbGetAll();
     books.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-    const grid = document.getElementById('libGrid');
+    const hero = document.getElementById('libHero');
     const empty = document.getElementById('libEmpty');
-    grid.innerHTML = '';
-    if(!books.length){ empty.style.display='flex'; return; }
+    const sections = document.getElementById('libSections');
+    sections.innerHTML = '';
+    hero.style.display = 'none';
     empty.style.display = 'none';
+    if(!books.length){ empty.style.display='flex'; libHue = null; return; }
+
+    // 英雄区：最近阅读/最新导入的书
+    const featured = books.find(b => b.progress > 0) || books[0];
+    renderHero(featured);
+
+    // 继续阅读
+    const reading = books.filter(b => b.progress > 0);
+    if(reading.length) renderStrip('继续阅读', reading);
+
+    // 全部书架（流动横滑）
+    renderStrip('书架', books, true);
+
+    hero.style.display = '';
+    empty.style.display = 'none';
+  }
+
+  function renderHero(b){
+    const hero = document.getElementById('libHero');
+    const bg = document.getElementById('libHeroBg');
+    const content = document.getElementById('libHeroContent');
+    if(b.cover){ bg.style.backgroundImage = `url(${b.cover})`; }
+    else { bg.style.background = placeholderBg(b.title); }
+    const pct = Math.round((b.progress||0)*100);
+    content.innerHTML = `
+      ${b.cover ? `<img class="lib-hero-cover" src="${b.cover}" alt="${esc(b.title)}">` : `<div class="lib-hero-cover" style="background:${placeholderBg(b.title)};display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);font-size:14px;text-align:center;padding:8px">${esc(b.title)}</div>`}
+      <div class="lib-hero-info">
+        <h2>${esc(b.title)}</h2>
+        <div class="sub">${esc(b.author)} · ${b.type.toUpperCase()}</div>
+        <div class="lib-hero-progress"><div style="width:${pct}%"></div></div>
+        <button class="lib-hero-continue" data-id="${b.id}">${b.progress > 0 ? '继续阅读' : '开始阅读'}</button>
+      </div>`;
+    content.querySelector('.lib-hero-continue').addEventListener('click', ()=> openReader(b.id));
+    setLibHue(b);
+  }
+
+  function renderStrip(title, books, autoFlow){
+    const sections = document.getElementById('libSections');
+    const sec = document.createElement('div');
+    sec.className = 'lib-section';
+    const strip = document.createElement('div');
+    strip.className = 'lib-strip';
+    let h = document.createElement('h2');
+    h.className = 'lib-section-title';
+    h.textContent = title;
+    sec.appendChild(h);
+    sec.appendChild(strip);
     for(const b of books){
       const card = document.createElement('div');
-      card.className = 'book-card';
+      card.className = 'lib-card';
       const cover = b.cover
         ? `<img src="${b.cover}" alt="${esc(b.title)}">`
-        : `<div class="book-cover-placeholder" style="background:${placeholderBg(b.title)}">${esc(b.title)}</div>`;
+        : `<div class="cover-ph" style="background:${placeholderBg(b.title)}">${esc(b.title)}</div>`;
       card.innerHTML = `
-        <div class="book-cover-wrap">
-          <span class="type-badge ${b.type}">${b.type}</span>
+        <div class="cover-wrap">
+          <span class="badge ${b.type}">${b.type}</span>
           ${cover}
-          ${b.progress>0?`<div class="book-progress-bar" style="width:${(b.progress*100).toFixed(0)}%"></div>`:''}
-          <button class="book-delete" data-id="${b.id}">&times;</button>
+          ${b.progress>0 ? `<div class="pbar" style="width:${(b.progress*100).toFixed(0)}%"></div>`:''}
+          <button class="del" data-id="${b.id}">&times;</button>
         </div>
-        <div class="book-info">
-          <div class="book-title">${esc(b.title)}</div>
-          <div class="book-author">${esc(b.author)}</div>
+        <div class="info">
+          <div class="title">${esc(b.title)}</div>
+          <div class="author">${esc(b.author)}</div>
         </div>`;
-      card.addEventListener('click', e => { if(!e.target.classList.contains('book-delete')) openReader(b.id); });
-      card.querySelector('.book-delete').addEventListener('click', async e => {
+      card.addEventListener('mouseenter', ()=> setLibHue(b));
+      card.addEventListener('mouseleave', ()=>{
+        const f = document.getElementById('libHeroContent');
+        // 回到英雄区的色相
+        const featured = f?.querySelector('.lib-hero-continue');
+        if(featured){ /* noop, hue drifts back via libHueTarget */ }
+      });
+      card.addEventListener('click', e => { if(!e.target.classList.contains('del')) openReader(b.id); });
+      card.querySelector('.del').addEventListener('click', async e => {
         e.stopPropagation(); await dbDelete(b.id); refreshLibrary();
       });
-      grid.appendChild(card);
+      strip.appendChild(card);
+    }
+    sections.appendChild(sec);
+    if(autoFlow && strip.scrollWidth > strip.clientWidth + 20){
+      autoMarquee(strip);
+    }
+  }
+
+  function autoMarquee(strip){
+    let paused = false;
+    strip.addEventListener('pointerenter', ()=> paused = true);
+    strip.addEventListener('pointerleave', ()=> paused = false);
+    function step(){
+      if(!paused){
+        strip.scrollLeft += 0.35;
+        if(strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 1) strip.scrollLeft = 0;
+      }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function setLibHue(b){
+    if(b.hueData && b.hueData.hue != null){
+      libHue = b.hueData.hue;
+      libSat = Math.max(0.3, b.hueData.sat || 0.4) * 100;
+      libLight = Math.max(0.1, Math.min(0.25, b.hueData.light || 0.18)) * 100;
+    } else {
+      let h = 0; for(let i=0;i<(b.title||'').length;i++) h=(h*31+b.title.charCodeAt(i))%360;
+      libHue = h; libSat = 35; libLight = 10;
     }
   }
   function placeholderBg(t){let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%360;return `linear-gradient(135deg,hsl(${h},35%,22%),hsl(${(h+40)%360},35%,14%))`}
@@ -859,7 +959,8 @@ if(typeof pdfjsLib !== 'undefined')
     s.epubRendition = s.epubBook = s.pdfDoc = null;
     s.pptxSlides = [];
     s.bookId = null; s.type = null;
-    bookHue = null;  // 回到书架时恢复自由漂移
+    bookHue = null;
+    libHue = null;  // 回到书架后让它重新根据悬停/英雄区渲染
     document.getElementById('readerView').classList.remove('active');
     document.getElementById('libraryView').style.display = '';
     refreshLibrary();
@@ -933,6 +1034,7 @@ if(typeof pdfjsLib !== 'undefined')
   const bgCtx = bgCanvas.getContext('2d');
   let hue = 230, hueTarget = 230;
   let bookHue = null, bookSat = 0.45, bookLight = 0.18;
+  let libHue = null, libSat = 45, libLight = 9;
   function resizeBg(){bgCanvas.width=innerWidth;bgCanvas.height=innerHeight}
   window.addEventListener('resize', resizeBg); resizeBg();
   function drawBg(){
@@ -943,10 +1045,13 @@ if(typeof pdfjsLib !== 'undefined')
     const layers = reading ? 3 : 4;
     const energy = reading ? 0.5 : 1;
 
-    // 阅读时：背景色由当前书籍封面决定（Folia 风格）
-    const baseHue = reading && bookHue != null ? bookHue : hue;
-    const baseSat = reading && bookHue != null ? bookSat * 100 : 45;
-    const baseLight = reading && bookHue != null ? bookLight * 100 : 9;
+    // 书架时：背景色随书架悬停/英雄区书籍变化（Folia 流动风格）
+    const baseHue = reading && bookHue != null ? bookHue :
+                    (!reading && libHue != null ? libHue : hue);
+    const baseSat = reading && bookHue != null ? bookSat * 100 :
+                    (!reading && libHue != null ? libSat : 45);
+    const baseLight = reading && bookHue != null ? bookLight * 100 :
+                      (!reading && libHue != null ? libLight : 9);
 
     for(let i=0;i<layers;i++){
       const ph = t + i*2.1;
@@ -962,8 +1067,9 @@ if(typeof pdfjsLib !== 'undefined')
     }
     // 非阅读时才自由漂移色相
     if(!reading){
-      hue += (hueTarget-hue)*0.003;
-      if(Math.abs(hueTarget-hue)<0.5) hueTarget = (hue + 30 + Math.random()*60)%360;
+      const target = libHue != null ? libHue : hue;
+      hue += (target - hue) * 0.008;
+      if(libHue == null && Math.abs(hueTarget - hue) < 0.5) hueTarget = (hue + 30 + Math.random()*40)%360;
     } else {
       // 阅读时缓慢回到书的色相
       hue += (bookHue - hue)*0.01;
@@ -1046,18 +1152,38 @@ if(typeof pdfjsLib !== 'undefined')
   });
 
   document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){
+      if(document.getElementById('readerView').classList.contains('active')){
+        // 阅读页：ESC 逐级返回（目录 → 设置 → 书架）
+        if(document.getElementById('tocPanel').classList.contains('open')) document.getElementById('tocPanel').classList.remove('open');
+        else if(document.getElementById('settingsPanel').classList.contains('show')) document.getElementById('settingsPanel').classList.remove('show');
+        else closeReader();
+      } else {
+        // 书架页：ESC 退出应用
+        exitApp();
+      }
+      return;
+    }
     if(!document.getElementById('readerView').classList.contains('active')) return;
     if(e.key==='ArrowLeft') goPrev();
     if(e.key==='ArrowRight') goNext();
-    if(e.key==='Escape'){
-      if(document.getElementById('tocPanel').classList.contains('open')) document.getElementById('tocPanel').classList.remove('open');
-      else closeReader();
-    }
     showUI();
   });
+
+  // 退出应用：Android 桥接 → 通知启动器关闭 → 尝试 window.close → 兜底退出画面
+  function exitApp(){
+    try{
+      if(window.AndroidBridge && typeof window.AndroidBridge.exit === 'function'){ window.AndroidBridge.exit(); return; }
+    }catch(err){}
+    try{ fetch('/__exit__', { keepalive: true }).catch(()=>{}); }catch(err){}
+    window.close();
+    setTimeout(()=>{
+      document.body.innerHTML = '<div style="position:fixed;inset:0;background:#08080f;display:flex;align-items:center;justify-content:center;color:#555;font-size:15px;font-family:sans-serif">已退出，可关闭本窗口</div>';
+    }, 300);
+  }
   document.getElementById('readerView').addEventListener('mousemove', showUI);
 
-  // ===== 滑动翻页（触摸 + 鼠标拖拽，EPUB/PDF/PPT 通用） =====
+  // ===== 滑动翻页（触摸滑动 + 鼠标滚轮 + 点按分区，EPUB/PDF/PPT 通用） =====
   let lastTurn = 0;
   function turnOk(){ const n = Date.now(); if(n - lastTurn < 450) return false; lastTurn = n; return true; }
   function turnNext(){ if(turnOk()) goNext(); }
@@ -1065,28 +1191,43 @@ if(typeof pdfjsLib !== 'undefined')
 
   function bindSwipe(el, tapFn){
     let sx=0, sy=0, st=0, id=null;
-    el.addEventListener('pointerdown', e => { sx=e.clientX; sy=e.clientY; st=Date.now(); id=e.pointerId; }, {passive:true});
+    el.addEventListener('pointerdown', e => {
+      if(e.pointerType !== 'touch') return;
+      sx=e.clientX; sy=e.clientY; st=Date.now(); id=e.pointerId;
+    }, {passive:true});
     el.addEventListener('pointerup', e => {
+      if(e.pointerType !== 'touch') return;
       if(id!==null && e.pointerId!==id) return; id=null;
       const dx=e.clientX-sx, dy=e.clientY-sy, dt=Date.now()-st;
-      // 水平滑动 → 翻页
       if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
         if(dx<0) turnNext(); else turnPrev();
         return;
       }
-      // 轻点中心 → 显示/隐藏控件
-      if(dt<300 && Math.abs(dx)<15 && Math.abs(dy)<15 && tapFn) tapFn(sx);
+      if(dt<300 && Math.abs(dx)<15 && Math.abs(dy)<15 && tapFn) tapFn(sx, sy, e.target);
       else showUI();
     }, {passive:true});
   }
 
-  function tapToggle(sx){
-    const cx = innerWidth/2;
+  // 鼠标滚轮滑动翻页（不要拖拽）
+  let wheelAcc = 0;
+  document.getElementById('readerView').addEventListener('wheel', e => {
+    if(!document.getElementById('readerView').classList.contains('active')) return;
+    wheelAcc += e.deltaY;
+    const threshold = 120;
+    if(wheelAcc > threshold){ wheelAcc = 0; turnNext(); }
+    else if(wheelAcc < -threshold){ wheelAcc = 0; turnPrev(); }
+    showUI();
+  }, { passive: true });
+
+  // 点按分区翻页（无可见按钮）：左 1/4 上一页，右 1/4 下一页，中间显示/隐藏控件
+  function tapToggle(sx, sy, target){
+    if(target && target.closest && target.closest('button, .progress-bar, .settings-panel, .toc-panel, .reader-topbar, .reader-controls')){ showUI(); return; }
+    const w = innerWidth;
+    if(sx < w*0.25){ turnPrev(); showUI(); return; }
+    if(sx > w*0.75){ turnNext(); showUI(); return; }
     const tb = document.getElementById('readerTopbar');
-    if(Math.abs(sx-cx) < innerWidth*0.3){
-      if(tb.classList.contains('hidden')) showUI();
-      else { tb.classList.add('hidden'); document.getElementById('readerControls').classList.add('hidden'); clearTimeout(hideTimer); }
-    } else showUI();
+    if(tb.classList.contains('hidden')) showUI();
+    else { tb.classList.add('hidden'); document.getElementById('readerControls').classList.add('hidden'); clearTimeout(hideTimer); }
   }
 
   bindSwipe(document.getElementById('readerView'), tapToggle);
@@ -1111,10 +1252,10 @@ if(typeof pdfjsLib !== 'undefined')
   // ============================================================
   // 注册 Service Worker（离线缓存）
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').then(
-      () => console.log('[sw] registered'),
-      e => console.warn('[sw] failed:', e)
-    );
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      console.log('[sw] registered');
+      reg.update().catch(()=>{});
+    }, e => console.warn('[sw] failed:', e));
   }
 
   openDB().then(()=>{

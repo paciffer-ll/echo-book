@@ -7,6 +7,7 @@
 import http.server, os, subprocess, threading, time, socket, ipaddress
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+BROWSER_PROC = None
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
@@ -18,6 +19,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if path.endswith('.js'):
             return 'application/javascript'
         return t
+    # 页面按 ESC 退出时请求这个地址：关服务器 + 关浏览器窗口
+    def do_GET(self):
+        if self.path.startswith('/__exit__'):
+            self.send_response(200)
+            self.send_header('Content-Length', '3')
+            self.end_headers()
+            self.wfile.write(b'bye')
+            def _kill():
+                try:
+                    if BROWSER_PROC: BROWSER_PROC.terminate()
+                except Exception: pass
+                os._exit(0)
+            threading.Timer(0.6, _kill).start()
+            return
+        return super().do_GET()
 
 def get_local_ip():
     """获取本机局域网 IP"""
@@ -42,7 +58,7 @@ def find_browser():
     return None
 
 def main():
-    port = 8888
+    port = 9100
     local_ip = get_local_ip()
     url = f"http://{local_ip}:{port}/echo-books.html"
     localhost_url = f"http://127.0.0.1:{port}/echo-books.html"
@@ -69,7 +85,7 @@ def main():
 
     exe = find_browser()
     if exe:
-        subprocess.Popen([exe, f"--app={localhost_url}", "--window-size=1000,760",
+        BROWSER_PROC = subprocess.Popen([exe, f"--app={localhost_url}", "--window-size=1000,760",
                           "--disable-extensions", "--no-default-browser-check"])
 
     try:

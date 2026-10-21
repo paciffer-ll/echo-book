@@ -26,7 +26,13 @@ public class MainActivity extends Activity {
         s.setAllowUniversalAccessFromFileURLs(true);
         
         webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(this, "AndroidBridge");
         webView.loadUrl("file:///android_asset/www/echo-books.html");
+    }
+    
+    @android.webkit.JavascriptInterface
+    public void exit() {
+        finish();
     }
     
     @Override

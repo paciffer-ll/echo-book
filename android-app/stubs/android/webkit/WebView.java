@@ -8,4 +8,5 @@ public class WebView extends View {
     public void loadUrl(String url) {}
     public boolean canGoBack() { return false; }
     public void goBack() {}
+    public void addJavascriptInterface(Object o, String name) {}
 }

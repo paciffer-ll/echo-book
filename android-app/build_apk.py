@@ -138,6 +138,8 @@ def main():
 
     run([str(jdk/'bin'/'jar.exe'), 'cf', str(OUT/'c.jar'), '-C', str(OUT/'classes'), '.'], 'JAR', env)
     run([str(bt/'d8.bat'), '--release', '--output', str(OUT), str(OUT/'c.jar')], 'DEX', env)
+    if not (OUT / 'classes.dex').exists():
+        sys.exit('DEX 生成失败，终止构建（不会产出坏 APK）')
 
     axml = AxmlWriter().encode(APP / 'AndroidManifest.xml')
     (OUT / 'AndroidManifest.xml').write_bytes(axml)

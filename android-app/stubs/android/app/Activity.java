@@ -7,4 +7,5 @@ public class Activity extends Context {
     public void setContentView(View v) {}
     public void onBackPressed() { finish(); }
     public void finish() {}
+    public void runOnUiThread(Runnable r) { r.run(); }
 }
