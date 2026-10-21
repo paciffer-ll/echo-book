@@ -5,6 +5,7 @@ public class WebView extends View {
     public WebView(Context c) { super(c); }
     public WebSettings getSettings() { return new WebSettings(); }
     public void setWebViewClient(WebViewClient c) {}
+    public void setWebChromeClient(WebChromeClient c) {}
     public void loadUrl(String url) {}
     public boolean canGoBack() { return false; }
     public void goBack() {}

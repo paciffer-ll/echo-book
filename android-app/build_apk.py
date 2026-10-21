@@ -2,7 +2,7 @@
 Echo Books APK 构建脚本
 编译 Java 桩 → DEX → AXML 编码 → 打包签名对齐 → EchoBooks.apk
 """
-import struct, os, zipfile, subprocess, sys, shutil
+import struct, os, zipfile, subprocess, sys, shutil, re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -12,6 +12,9 @@ JDK = BASE / 'jdk'
 BT  = BASE / 'bt'
 OUT = APP / 'build'
 APK_OUT = BASE / 'EchoBooks.apk'
+WWW = APP / 'assets' / 'www'
+# 需要从根目录同步进 APK 的单文件资源
+SYNC_FILES = ['echo-books.html', 'manifest.json', 'sw.js']
 
 ANDROID_NS = 'http://schemas.android.com/apk/res/android'
 FRAMEWORK_ATTRS = {
@@ -19,6 +22,8 @@ FRAMEWORK_ATTRS = {
     'name': 0x01010003, 'label': 0x01010001,
     'allowBackup': 0x01010280, 'exported': 0x01010010,
     'configChanges': 0x010100f1, 'debuggable': 0x0101000f,
+    'minSdkVersion': 0x0101020c, 'targetSdkVersion': 0x01010270,
+    'maxSdkVersion': 0x01010271,
 }
 CONFIG_FLAGS = {'orientation': 0x0010, 'screenSize': 0x0400, 'keyboardHidden': 0x0020}
 
@@ -37,18 +42,22 @@ class AxmlWriter:
         return self.si[s]
 
     def _enc_str(self, s):
-        d = s.encode('utf-8'); u16 = len(s); u8 = len(d)
-        if u8 < 0x80: hdr = struct.pack('BB', u8, u16)
-        else: hdr = struct.pack('BBBB', (u8>>8)|0x80, u8&0xFF, (u16>>8)|0x80, u16&0xFF)
-        return hdr + d + b'\x00'
+        d = s.encode('utf-8'); charSize = len(s); byteSize = len(d)
+        def enc16(v):
+            if v < 0x80: return struct.pack('B', v)
+            return struct.pack('BB', ((v >> 8) | 0x80), v & 0xFF)
+        # Android UTF-8 字符串池条目：charSize 在前、byteSize 在后，各自变长编码
+        return enc16(charSize) + enc16(byteSize) + d + b'\x00'
 
     def _pool(self):
         offs, enc, off = [], b'', 0
         for s in self.strings:
             offs.append(off); e = self._enc_str(s); enc += e; off += len(e)
         while len(enc) % 4: enc += b'\x00'
-        n = len(self.strings); ss = 0x1C + n*4
-        h = struct.pack('<HHIIIIII', 0x0001, 0x1C, ss+len(enc), n, 0, 0x100, 0x1C, 0)
+        n = len(self.strings)
+        stringsStart = 0x1C + n*4          # 头部 + 偏移数组之后才是字符串数据
+        size = stringsStart + len(enc)
+        h = struct.pack('<HHIIIIII', 0x0001, 0x1C, size, n, 0, 0x100, stringsStart, 0)
         return h + b''.join(struct.pack('<I', o) for o in offs) + enc
 
     def _rmap(self):
@@ -72,7 +81,8 @@ class AxmlWriter:
         return h + b + body
 
     def _end(self, name, ln):
-        return struct.pack('<HHIIII', 0x0103, 0x10, 24, ln, 0xFFFFFFFF, name)
+        # 结束元素：节点头(16) + ns(4) + name(4) = 24 字节
+        return struct.pack('<HHIIIII', 0x0103, 0x10, 24, ln, 0xFFFFFFFF, 0xFFFFFFFF, name)
 
     def encode(self, xml_path):
         root = ET.parse(xml_path).getroot()
@@ -86,7 +96,7 @@ class AxmlWriter:
             attrs = []
             for k, v in el.attrib.items():
                 if '}' in k:
-                    nsi = self._s(k.split('}')[0]); lnk = k.split('}')[-1]
+                    nsi = self._s(k.split('}')[0][1:]); lnk = k.split('}')[-1]
                 else:
                     nsi = 0xFFFFFFFF; lnk = k
                 ani = self._s(lnk)
@@ -96,7 +106,7 @@ class AxmlWriter:
                     fv = 0
                     for p in v.split('|'): fv |= CONFIG_FLAGS.get(p.strip(), 0)
                     dt, dv, rv = self.TYPE_INT_HEX, fv, 0xFFFFFFFF
-                elif lnk == 'versionCode':
+                elif lnk in ('versionCode','minSdkVersion','targetSdkVersion','maxSdkVersion'):
                     dt, dv, rv = self.TYPE_INT_DEC, int(v), 0xFFFFFFFF
                 else:
                     vi = self._s(v); dt, dv, rv = self.TYPE_STRING, vi, vi
@@ -127,9 +137,49 @@ def find_bt():
         if (d / 'aapt2.exe').exists(): return d
     sys.exit('build-tools not found')
 
+def sync_assets():
+    """把根目录最新的 Web 资源同步进 APK 资产目录，避免打进旧副本"""
+    WWW.mkdir(parents=True, exist_ok=True)
+    for name in SYNC_FILES:
+        src = BASE / name
+        if src.exists():
+            shutil.copy2(src, WWW / name)
+            print(f'[sync] {name} ({src.stat().st_size} bytes) -> assets/www/')
+        else:
+            print(f'[sync] 警告：根目录缺少 {name}，跳过')
+    src_libs = BASE / 'libs'
+    dst_libs = WWW / 'libs'
+    if src_libs.exists():
+        dst_libs.mkdir(parents=True, exist_ok=True)
+        n = 0
+        for f in src_libs.rglob('*'):
+            if f.is_file():
+                rel = f.relative_to(src_libs)
+                target = dst_libs / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, target); n += 1
+        print(f'[sync] libs/ -> assets/www/libs/ （{n} 个文件）')
+    else:
+        print('[sync] 警告：根目录缺少 libs/，跳过')
+
+def bump_version():
+    """自动递增 AndroidManifest.xml 的 versionCode，让每次构建都能被识别为新版（可覆盖升级）"""
+    mf = APP / 'AndroidManifest.xml'
+    text = mf.read_text(encoding='utf-8')
+    m = re.search(r'android:versionCode="(\d+)"', text)
+    if not m:
+        print('[version] 警告：未找到 android:versionCode，跳过递增'); return
+    old = int(m.group(1)); new = old + 1
+    text = text.replace(f'android:versionCode="{old}"', f'android:versionCode="{new}"', 1)
+    mf.write_text(text, encoding='utf-8')
+    print(f'[version] versionCode {old} -> {new}')
+
 def main():
     jdk, bt = find_jdk(), find_bt()
     env = {**os.environ, 'JAVA_HOME': str(jdk), 'PATH': f'{jdk/"bin"};{os.environ["PATH"]}'}
+    # 每次构建前先同步最新资源并递增版本号
+    sync_assets()
+    bump_version()
     if OUT.exists(): shutil.rmtree(OUT)
     (OUT / 'classes').mkdir(parents=True)
 
@@ -156,19 +206,30 @@ def main():
                 if f.is_file(): zf.write(f, str(f.relative_to(APP)))
     print(f'APK: {unsigned.stat().st_size} bytes')
 
-    ks = OUT / 'debug.keystore'
+    # 密钥库固定保存在 android-app/ 下，不随 build 目录清空，保证以后能覆盖升级
+    ks = APP / 'echo.keystore'
     if not ks.exists():
         run([str(jdk/'bin'/'keytool.exe'), '-genkeypair', '-alias', 'echokey',
              '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000',
              '-keystore', str(ks), '-storepass', 'android', '-keypass', 'android',
              '-dname', 'CN=Echo Books,O=Echo,C=US'], 'Keystore', env)
-    run([str(jdk/'bin'/'jarsigner.exe'), '-verbose', '-sigalg', 'SHA256withRSA',
-         '-digestalg', 'SHA-256', '-keystore', str(ks), '-storepass', 'android',
-         '-keypass', 'android', str(unsigned), 'echokey'], 'Sign', env)
 
+    # 先 zipalign 对齐，再用 apksigner 做 v1+v2+v3 签名（现代安卓要求 v2+，仅 v1 会装不上）
     za = bt / 'zipalign.exe'
-    r = run([str(za), '-f', '-v', '4', str(unsigned), str(APK_OUT)], 'zipalign', env)
-    if not r: shutil.copy(unsigned, APK_OUT); print('zipalign failed, using signed APK')
+    aligned = OUT / 'aligned.apk'
+    if not run([str(za), '-f', '-p', '4', str(unsigned), str(aligned)], 'zipalign', env):
+        shutil.copy(unsigned, aligned)
+
+    aps = bt / 'apksigner.bat'
+    ok = run([str(aps), 'sign',
+              '--ks', str(ks), '--ks-key-alias', 'echokey',
+              '--ks-pass', 'pass:android', '--key-pass', 'pass:android',
+              '--v1-signing-enabled', 'true',
+              '--v2-signing-enabled', 'true',
+              '--v3-signing-enabled', 'true',
+              '--out', str(APK_OUT), str(aligned)], 'apksigner sign', env)
+    if not ok or not APK_OUT.exists():
+        sys.exit('apksigner 签名失败，终止构建（不会产出坏 APK）')
     print(f'\n=== DONE: {APK_OUT} ({APK_OUT.stat().st_size//1024} KB) ===')
 
 if __name__ == '__main__':
