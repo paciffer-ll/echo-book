@@ -1,0 +1,30 @@
+# 忽略一切
+*
+
+# 只保留 Echo Books 项目文件
+!.gitignore
+!README.md
+!echo-books.html
+!echo_books_launcher.py
+!manifest.json
+!sw.js
+!EchoBooks.apk
+!libs/
+!libs/**
+!android-app/
+!android-app/**
+!android-app/.gitkeep
+
+# 但仍排除构建中间产物和工具链
+jdk/
+bt/
+*.zip
+android-app/build/
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.idb
+*.tlog
+*.log
+*.recipe

@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Echo Books">
+<meta name="theme-color" content="#08080f">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="libs/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="libs/icon-192.png">
+<title>Echo Books — 沉浸式阅读</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#08080f; --surface:#10101c; --glass:rgba(16,16,28,.72);
+    --text:#d4d4dc; --text2:#7c7c94; --text3:#4a4a5c;
+    --accent:#8b8edb; --accent-glow:rgba(139,142,219,.25);
+    --border:rgba(255,255,255,.06);
+    --serif:"Noto Serif SC","Source Han Serif SC","SimSun",serif;
+    --sans:-apple-system,"Microsoft YaHei",sans-serif;
+    --epub:#6c8eef; --pdf:#e0584f; --ppt:#e8a838;
+  }
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);user-select:none}
+
+  #bgCanvas{position:fixed;inset:0;z-index:0}
+
+  /* ===== 书架 ===== */
+  #libraryView{position:relative;z-index:2;width:100%;height:100%;overflow-y:auto}
+  #libraryView::-webkit-scrollbar{width:6px}
+  #libraryView::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+  .lib-header{
+    position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+    padding:28px 36px 20px;background:linear-gradient(to bottom,var(--bg) 60%,transparent);
+    backdrop-filter:blur(12px);
+  }
+  .lib-header h1{font-size:22px;font-weight:300;letter-spacing:1px;color:#fff}
+  .lib-header h1 span{color:var(--accent)}
+  .btn-import{
+    background:rgba(139,142,219,.08);border:1px solid rgba(139,142,219,.15);
+    border-radius:20px;padding:8px 18px;color:var(--accent);font-size:13px;
+    cursor:pointer;transition:background .2s,color .2s;
+  }
+  .btn-import:hover{background:rgba(139,142,219,.18);color:#c0c4f0}
+  .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:28px 24px;padding:8px 36px 48px}
+  .book-card{cursor:pointer;transition:transform .35s cubic-bezier(.25,.1,.25,1)}
+  .book-card:hover{transform:translateY(-6px)}
+  .book-cover-wrap{
+    position:relative;aspect-ratio:2/3;border-radius:4px;overflow:hidden;
+    box-shadow:0 6px 24px rgba(0,0,0,.45);transition:box-shadow .35s;
+  }
+  .book-card:hover .book-cover-wrap{box-shadow:0 12px 48px var(--accent-glow),0 4px 16px rgba(0,0,0,.4)}
+  .book-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .book-cover-placeholder{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    padding:16px;text-align:center;font-size:14px;font-weight:600;color:rgba(255,255,255,.75);line-height:1.4;
+  }
+  .type-badge{
+    position:absolute;top:6px;left:6px;padding:2px 6px;border-radius:3px;
+    font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  }
+  .type-badge.epub{background:var(--epub);color:#fff}
+  .type-badge.pdf{background:var(--pdf);color:#fff}
+  .type-badge.pptx{background:var(--ppt);color:#000}
+  .book-progress-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);opacity:.8;transition:width .3s}
+  .book-delete{
+    position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;
+    background:rgba(0,0,0,.6);color:#aaa;border:none;cursor:pointer;font-size:14px;line-height:1;
+    display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s,color .2s;
+  }
+  .book-card:hover .book-delete{opacity:1}
+  .book-delete:hover{color:#ff6b6b;background:rgba(0,0,0,.8)}
+  .book-info{margin-top:10px}
+  .book-title{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .book-author{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3)}
+  .lib-empty .empty-icon{font-size:64px;margin-bottom:16px;opacity:.3}
+  .lib-empty p{font-size:15px}
+  .lib-empty .empty-hint{font-size:12px;margin-top:6px;color:var(--text3)}
+
+  /* ===== 阅读器 ===== */
+  #readerView{position:fixed;inset:0;z-index:3;display:none}
+  #readerView.active{display:block}
+  #epubViewer{position:absolute;inset:0;z-index:1}
+  #pdfCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;display:none;max-width:94%;max-height:88%;box-shadow:0 8px 48px rgba(0,0,0,.5);border-radius:4px}
+  #slideViewer{position:absolute;inset:0;z-index:1;display:none;overflow-y:auto;padding:40px 20px}
+  .slide-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:40px 56px;max-width:760px;margin:0 auto 24px;min-height:420px;
+    aspect-ratio:16/9;box-shadow:0 8px 40px rgba(0,0,0,.4);
+  }
+  .slide-card h2{font-size:22px;color:#fff;margin-bottom:16px;font-weight:500}
+  .slide-card p{font-size:16px;color:#b8b8c4;line-height:1.8;margin-bottom:8px;font-family:var(--serif)}
+
+  .reader-topbar,.reader-controls{position:fixed;left:0;right:0;z-index:10;transition:opacity .5s,transform .5s}
+  .reader-topbar{
+    top:0;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(to bottom,rgba(8,8,15,.85),transparent);backdrop-filter:blur(10px);
+  }
+  .reader-controls{
+    bottom:0;padding:14px 24px 20px;
+    background:linear-gradient(to top,rgba(8,8,15,.9),transparent);backdrop-filter:blur(10px);
+  }
+  .reader-topbar.hidden{opacity:0;transform:translateY(-20px);pointer-events:none}
+  .reader-controls.hidden{opacity:0;transform:translateY(20px);pointer-events:none}
+  .btn-back,.btn-toc{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:6px;transition:color .2s,background .2s}
+  .btn-back:hover,.btn-toc:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .reader-chapter{font-size:13px;color:var(--text2);text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 16px}
+  .progress-row{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+  .progress-text{font-size:11px;color:var(--text2);font-family:"Consolas",monospace;min-width:38px}
+  .progress-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.08);cursor:pointer;position:relative}
+  .progress-fill{height:100%;border-radius:2px;background:var(--accent);width:0%;transition:width .2s}
+  .page-text{font-size:11px;color:var(--text3);font-family:"Consolas",monospace}
+  .control-row{display:flex;align-items:center;justify-content:center}
+  .btn-nav{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .btn-nav:hover{background:rgba(139,142,219,.12)}
+  .font-controls{display:flex;gap:8px}
+  .btn-font{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text2);font-size:13px;cursor:pointer;transition:color .2s,background .2s}
+  .btn-font:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .btn-font.hidden{display:none}
+
+  /* ===== 目录面板 ===== */
+  .toc-panel{
+    position:fixed;top:0;right:0;bottom:0;width:280px;z-index:15;
+    background:var(--glass);backdrop-filter:blur(24px);border-left:1px solid var(--border);
+    transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;
+  }
+  .toc-panel.open{transform:translateX(0)}
+  .toc-header{padding:24px 20px 14px;font-size:14px;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .toc-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+  .toc-close:hover{color:#fff}
+  .toc-list{flex:1;overflow-y:auto;padding:8px 0}
+  .toc-list::-webkit-scrollbar{width:4px}
+  .toc-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+  .toc-item{padding:9px 20px;font-size:13px;color:var(--text2);cursor:pointer;transition:color .15s,background .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toc-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+  .toc-item.active{color:var(--accent)}
+  .toc-item.toc-sub{padding-left:36px;font-size:12px}
+
+  /* ===== 拖拽/加载/提示 ===== */
+  .drop-overlay{position:fixed;inset:0;z-index:50;background:rgba(8,8,15,.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center}
+  .drop-overlay.show{display:flex}
+  .drop-text{font-size:24px;color:var(--accent);font-weight:300}
+  .loading{position:fixed;inset:0;z-index:60;background:rgba(8,8,15,.85);display:none;flex-direction:column;align-items:center;justify-content:center}
+  .loading.show{display:flex}
+  .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading p{margin-top:14px;font-size:13px;color:var(--text2)}
+  .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:70;background:rgba(200,80,80,.92);color:#fff;padding:12px 24px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80%;text-align:center}
+  .toast.show{opacity:1}
+  .toast.success{background:rgba(60,140,80,.92)}
+
+  /* ===== 滑动手势提示 ===== */
+  .swipe-hint{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:8;color:rgba(255,255,255,.08);font-size:14px;pointer-events:none;
+    display:none;
+  }
+  .readerView.active .swipe-hint.show{display:block}
+
+  /* ===== 移动端适配 ===== */
+  @media (max-width:768px){
+    .lib-header{padding:16px 14px 12px}
+    .lib-header h1{font-size:18px}
+    .btn-import{padding:6px 14px;font-size:12px}
+    .lib-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px 12px;padding:6px 14px 32px}
+    .book-title{font-size:12px}
+    .book-author{font-size:10px}
+
+    .reader-topbar{padding:12px 16px}
+    .reader-controls{padding:12px 16px 18px}
+    .reader-chapter{font-size:12px;padding:0 8px}
+    .btn-back,.btn-toc{font-size:12px;padding:6px 10px}
+    .btn-nav{width:48px;height:48px;font-size:18px}
+    .btn-font{padding:8px 14px;font-size:14px}
+    .progress-row{gap:10px;margin-bottom:10px}
+    .progress-text,.page-text{font-size:10px;min-width:32px}
+
+    .toc-panel{width:85%;max-width:320px}
+    .toc-item{padding:12px 18px;font-size:14px}
+
+    #pdfCanvas{max-width:96%;max-height:86%}
+    .slide-card{padding:24px 20px;max-width:100%;min-height:auto}
+    .slide-card h2{font-size:18px}
+    .slide-card p{font-size:14px;line-height:1.7}
+    #slideViewer{padding:20px 12px}
+  }
+
+  /* ===== 安全区域 ===== */
+  .reader-topbar{padding-top:max(12px,env(safe-area-inset-top))}
+  .reader-controls{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+  .lib-header{padding-top:max(20px,env(safe-area-inset-top))}
+
+  /* ===== 亮度遮罩 ===== */
+  #brightnessOverlay{
+    position:fixed;inset:0;z-index:95;background:rgba(0,0,0,0);
+    pointer-events:none;transition:background .3s ease;
+  }
+
+  /* ===== 设置面板 ===== */
+  .settings-panel{
+    position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(20px);
+    z-index:12;width:340px;max-width:90vw;
+    background:var(--glass);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:12px;
+    padding:16px 20px;opacity:0;pointer-events:none;
+    transition:opacity .3s,transform .3s;
+  }
+  .settings-panel.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .settings-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .settings-row:last-child{margin-bottom:0}
+  .settings-row label{font-size:13px;color:var(--text2);min-width:36px}
+  .settings-row input[type=range]{flex:1;accent-color:var(--accent)}
+  .theme-btn{
+    width:36px;height:36px;border-radius:50%;border:2px solid transparent;
+    cursor:pointer;transition:border-color .2s,transform .15s;
+  }
+  .theme-btn:active{transform:scale(.9)}
+  .theme-btn.active{border-color:var(--accent)}
+  .theme-dark{background:linear-gradient(135deg,#08080f,#1a1a2e)}
+  .theme-light{background:linear-gradient(135deg,#f5f5f0,#e0e0d8)}
+  .theme-sepia{background:linear-gradient(135deg,#f4ecd8,#d4c8a8)}
+  .theme-night{background:#000}
+
+  /* 风格：亮色 */
+  body.theme-light{--bg:#f5f5f0;--surface:#fff;--text:#333;--text2:#888;--text3:#bbb;--border:rgba(0,0,0,.08);--glass:rgba(255,255,255,.72)}
+  body.theme-light #bgCanvas{opacity:.15}
+  body.theme-sepia{--bg:#f4ecd8;--surface:#ede0c8;--text:#5b4636;--text2:#8a7a60;--text3:#bbb;--border:rgba(91,70,54,.12);--glass:rgba(244,236,216,.8)}
+  body.theme-sepia #bgCanvas{opacity:.12}
+  body.theme-night{--bg:#000;--surface:#0a0a0a;--text:#555;--text2:#444;--text3:#333;--border:rgba(255,255,255,.03);--glass:rgba(0,0,0,.8)}
+  body.theme-night #bgCanvas{opacity:.05}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div id="brightnessOverlay"></div>
+
+<!-- 书架 -->
+<div id="libraryView">
+  <header class="lib-header">
+    <h1>Echo <span>Books</span></h1>
+    <button class="btn-import" id="btnImport">＋ 导入书籍</button>
+  </header>
+  <div class="lib-grid" id="libGrid"></div>
+  <div class="lib-empty" id="libEmpty">
+    <div class="empty-icon">📖</div>
+    <p>还没有书籍</p>
+    <p class="empty-hint">支持 EPUB / PDF / PPTX — 点击导入或直接拖入</p>
+  </div>
+</div>
+
+<!-- 阅读器 -->
+<div id="readerView">
+  <div id="epubViewer"></div>
+  <canvas id="pdfCanvas"></canvas>
+  <div id="slideViewer"></div>
+  <header class="reader-topbar" id="readerTopbar">
+    <button class="btn-back" id="btnBack">← 书架</button>
+    <span class="reader-chapter" id="readerChapter"></span>
+    <button class="btn-toc" id="btnToc">☰ 目录</button>
+  </header>
+  <footer class="reader-controls" id="readerControls">
+    <div class="progress-row">
+      <span class="progress-text" id="progressText">0%</span>
+      <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="page-text" id="pageText"></span>
+    </div>
+    <div class="control-row">
+      <div class="font-controls">
+        <button class="btn-font" id="btnFontDown">A−</button>
+        <button class="btn-font" id="btnFontUp">A＋</button>
+        <button class="btn-font" id="btnSettings">⚙</button>
+      </div>
+    </div>
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-row">
+        <label>亮度</label>
+        <input type="range" id="brightnessSlider" min="20" max="100" value="100">
+      </div>
+      <div class="settings-row">
+        <label>风格</label>
+        <button class="theme-btn theme-dark active" data-theme="dark" title="暗色"></button>
+        <button class="theme-btn theme-light" data-theme="light" title="亮色"></button>
+        <button class="theme-btn theme-sepia" data-theme="sepia" title="护眼"></button>
+        <button class="theme-btn theme-night" data-theme="night" title="夜间"></button>
+      </div>
+    </div>
+  </footer>
+  <aside class="toc-panel" id="tocPanel">
+    <div class="toc-header"><span id="tocTitle">目录</span><button class="toc-close" id="tocClose">&times;</button></div>
+    <div class="toc-list" id="tocList"></div>
+  </aside>
+</div>
+
+<div class="drop-overlay" id="dropOverlay"><div class="drop-text">📖 拖入 EPUB / PDF / PPTX</div></div>
+<div class="loading" id="loading"><div class="spinner"></div><p id="loadingText">正在导入…</p></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".epub,.pdf,.pptx" multiple style="display:none">
+
+<script src="libs/jszip.min.js"></script>
+<script src="libs/epub.min.js"></script>
+<script src="libs/pdf.min.js"></script>
+<script>
+if(typeof pdfjsLib !== 'undefined')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'libs/pdf.worker.min.js';
+</script>
+<script>
+(function(){
+  'use strict';
+
+  // ============================================================
+  //  状态
+  // ============================================================
+  let db = null;
+  let readerState = {
+    type: null, bookId: null,
+    epubRendition: null, epubBook: null,
+    pdfDoc: null, pdfPage: 1,
+    pptxSlides: [], pptxSlide: 0,
+    fontSize: 100,
+  };
+  let hideTimer = null;
+  const DB_NAME = 'echo-books', STORE = 'books';
+
+  // ---- 风格 / 亮度 ----
+  const THEMES = {
+    dark:  { bg:'#08080f', text:'#b8b8c4', epubBg:'transparent', epubText:'#b8b8c4', pdfFilter:'none', slideBg:'#10101c', slideText:'#b8b8c4', slideTitle:'#fff' },
+    light: { bg:'#f5f5f0', text:'#333',     epubBg:'#f5f5f0',    epubText:'#333',     pdfFilter:'none', slideBg:'#fff',    slideText:'#333',     slideTitle:'#000' },
+    sepia: { bg:'#f4ecd8', text:'#5b4636',  epubBg:'#f4ecd8',    epubText:'#5b4636',  pdfFilter:'sepia(.3)', slideBg:'#ede0c8', slideText:'#5b4636', slideTitle:'#3a2a1a' },
+    night: { bg:'#000',    text:'#555',     epubBg:'#000',       epubText:'#555',     pdfFilter:'invert(1) hue-rotate(180deg)', slideBg:'#0a0a0a', slideText:'#444', slideTitle:'#666' },
+  };
+  let currentTheme = localStorage.getItem('echo-theme') || 'dark';
+  let brightness = parseInt(localStorage.getItem('echo-brightness') || '100');
+
+  // ============================================================
+  //  IndexedDB
+  // ============================================================
+  function openDB(){
+    return new Promise((res,rej)=>{
+      const r = indexedDB.open(DB_NAME,1);
+      r.onupgradeneeded = e => {
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
+      };
+      r.onsuccess = e => { db = e.target.result; res(db); };
+      r.onerror = e => rej(e);
+    });
+  }
+  function dbPut(b){return new Promise((res,rej)=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).put(b);t.oncomplete=res;t.onerror=rej;})}
+  function dbGetAll(){return new Promise((res,rej)=>{const t=db.transaction(STORE,'readonly');const r=t.objectStore(STORE).getAll();r.onsuccess=()=>res(r.result);r.onerror=rej;})}
+  function dbGet(id){return new Promise((res,rej)=>{const t=db.transaction(STORE,'readonly');const r=t.objectStore(STORE).get(id);r.onsuccess=()=>res(r.result);r.onerror=rej;})}
+  function dbDelete(id){return new Promise((res,rej)=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).delete(id);t.oncomplete=res;t.onerror=rej;})}
+
+  // ============================================================
+  //  文件类型检测
+  // ============================================================
+  function detectType(file){
+    const n = file.name.toLowerCase();
+    if(n.endsWith('.epub')) return 'epub';
+    if(n.endsWith('.pdf')) return 'pdf';
+    if(n.endsWith('.pptx')) return 'pptx';
+    if(n.endsWith('.ppt')) { showToast('.ppt 旧格式不支持，请转换为 .pptx'); return null; }
+    if(file.type === 'application/epub+zip') return 'epub';
+    if(file.type === 'application/pdf') return 'pdf';
+    if(file.type.includes('presentation')) return 'pptx';
+    return null;
+  }
+
+  // ============================================================
+  //  导入（分类型处理）
+  // ============================================================
+  async function importFile(file){
+    const type = detectType(file);
+    if(!type) return;
+    showLoading('正在导入《' + file.name + '》…');
+    try{
+      const buf = await file.arrayBuffer();
+      console.log('[import] type=' + type + ' size=' + buf.byteLength);
+
+      let meta = { title: file.name.replace(/\.[^.]+$/,''), author: '', cover: null };
+
+      if(type === 'epub'){
+        if(typeof ePub === 'undefined'){
+          showToast('epub.js 库未加载，请通过启动器打开');
+          return;
+        }
+        meta = await importEpubMeta(buf);
+      } else if(type === 'pdf'){
+        if(typeof pdfjsLib === 'undefined'){
+          showToast('pdf.js 库未加载，请通过启动器打开');
+          return;
+        }
+        meta = await importPdfMeta(buf);
+      } else if(type === 'pptx'){
+        if(typeof JSZip === 'undefined'){
+          showToast('JSZip 库未加载，请通过启动器打开');
+          return;
+        }
+        meta = await importPptxMeta(buf);
+      }
+
+      const book = {
+        id: 'bk-' + Date.now() + '-' + Math.random().toString(36).slice(2,8),
+        type, title: meta.title, author: meta.author || '未知作者',
+        cover: meta.cover, data: buf,
+        hueData: meta.hueData || null,
+        progress: 0, position: null, addedAt: Date.now()
+      };
+      await dbPut(book);
+      showToast('✓ 《' + meta.title + '》导入成功');
+    }catch(e){
+      console.error('[import ERROR]', e);
+      showToast('导入失败：' + (e.message || e));
+    }finally{
+      hideLoading();
+    }
+  }
+
+  // ---- EPUB 元数据 ----
+  async function importEpubMeta(buf){
+    const copy = buf.slice(0);
+    console.log('[epub] opening book, buf size=' + copy.byteLength);
+    const tmp = ePub(copy);
+    console.log('[epub] book created, waiting for metadata...');
+    const meta = await tmp.loaded.metadata;
+    console.log('[epub] metadata:', meta.title, meta.creator);
+    let cover = null;
+    try{
+      const url = await tmp.coverUrl();
+      if(url){ cover = await fetchURL(url); console.log('[epub] cover extracted'); }
+    }catch(e){ console.log('[epub] no cover:', e.message); }
+    tmp.destroy();
+    const hueData = cover ? await extractCoverHue(cover) : null;
+    return { title: meta.title || '未知书名', author: meta.creator || '', cover, hueData };
+  }
+
+  // ---- PDF 元数据 ----
+  async function importPdfMeta(buf){
+    if(typeof pdfjsLib === 'undefined') return { title: 'PDF', author: '' };
+    const copy = buf.slice(0);
+    const pdf = await pdfjsLib.getDocument({ data: copy }).promise;
+    let title = 'PDF Document', author = '';
+    try{
+      const m = await pdf.getMetadata();
+      if(m.info.Title) title = m.info.Title;
+      if(m.info.Author) author = m.info.Author;
+    }catch(e){}
+    // 第一页做封面
+    let cover = null;
+    try{
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({ scale: 0.4 });
+      const c = document.createElement('canvas');
+      c.width = vp.width; c.height = vp.height;
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      cover = c.toDataURL('image/jpeg', 0.65);
+    }catch(e){}
+    pdf.destroy();
+    const hueData = cover ? await extractCoverHue(cover) : null;
+    return { title, author, cover, hueData };
+  }
+
+  // ---- PPTX 元数据 ----
+  async function importPptxMeta(buf){
+    const zip = await JSZip.loadAsync(buf.slice(0));
+    let title = 'PPT 演示文稿', author = '';
+    // core.xml 元数据
+    try{
+      const coreXml = await zip.file('docProps/core.xml')?.async('text');
+      if(coreXml){
+        const tm = coreXml.match(/<dc:title[^>]*>([^<]*)<\/dc:title>/);
+        const am = coreXml.match(/<dc:creator[^>]*>([^<]*)<\/dc:creator>/);
+        if(tm && tm[1].trim()) title = tm[1].trim();
+        if(am && am[1].trim()) author = am[1].trim();
+      }
+    }catch(e){}
+    // 统计幻灯片数
+    const slideCount = Object.keys(zip.files).filter(n => /ppt\/slides\/slide\d+\.xml$/.test(n)).length;
+    // 没有封面，用标题哈希生成一个色相
+    let h = 0;
+    for(let i=0;i<title.length;i++) h = (h*31 + title.charCodeAt(i)) % 360;
+    return { title, author, cover: null, slideCount, hueData: { hue: h, sat: 0.4, light: 0.2 } };
+  }
+
+  async function fetchURL(url){
+    try{ const r = await fetch(url); const b = await r.blob(); return await blobToDataURL(b); }catch(e){ return null; }
+  }
+  function blobToDataURL(blob){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(blob);})}
+
+  // ---- 从封面提取主色调（Folia 风格：每本书的背景由封面决定） ----
+  function extractCoverHue(dataURL){
+    return new Promise(resolve => {
+      if(!dataURL){ resolve(null); return; }
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const c = document.createElement('canvas');
+          c.width = 8; c.height = 8;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, 8, 8);
+          const d = ctx.getImageData(0, 0, 8, 8).data;
+          let r=0, g=0, b=0, n=0;
+          for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+          r=Math.round(r/n); g=Math.round(g/n); b=Math.round(b/n);
+          const hsl = rgbToHsl(r,g,b);
+          resolve({ hue: hsl[0], sat: hsl[1], light: hsl[2] });
+        }catch(e){ resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataURL;
+    });
+  }
+  function rgbToHsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    let h=0,s=0,l=(mx+mn)/2;
+    if(mx!==mn){ const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+      if(mx===r) h=((g-b)/d+(g<b?6:0));
+      else if(mx===g) h=((b-r)/d+2);
+      else h=((r-g)/d+4);
+      h*=60;
+    }
+    return [h,s,l];
+  }
+
+  // ============================================================
+  //  PPTX 幻灯片解析
+  // ============================================================
+  async function parsePptxSlides(buf){
+    const zip = await JSZip.loadAsync(buf.slice(0));
+    const names = Object.keys(zip.files)
+      .filter(n => /ppt\/slides\/slide\d+\.xml$/.test(n))
+      .sort((a,b) => {
+        const na = parseInt(a.match(/slide(\d+)/)[1]);
+        const nb = parseInt(b.match(/slide(\d+)/)[1]);
+        return na - nb;
+      });
+    const slides = [];
+    for(const name of names){
+      const xml = await zip.file(name).async('text');
+      // 按 shape 分割，每个 shape 内的 <a:t> 合并为一段
+      const shapes = xml.split(/<p:sp[ >]/);
+      const texts = [];
+      for(const shape of shapes){
+        const ms = [...shape.matchAll(/<a:t>([^<]*)<\/a:t>/g)];
+        if(ms.length){
+          const t = ms.map(m => m[1]).join('');
+          if(t.trim()) texts.push(t.trim());
+        }
+      }
+      slides.push(texts);
+    }
+    return slides;
+  }
+
+  function renderPptxSlide(texts, index, total){
+    const el = document.getElementById('slideViewer');
+    const title = texts[0] || ('Slide ' + (index+1));
+    const body = texts.slice(1).map(t => `<p>${esc(t)}</p>`).join('');
+    const t = THEMES[currentTheme];
+    el.innerHTML = `<div class="slide-card" style="background:${t.slideBg};box-shadow:0 8px 40px rgba(0,0,0,.4)"><h2 style="color:${t.slideTitle}">${esc(title)}</h2>${body || '<p style="color:#555">（此页无文本内容）</p>'}</div>`;
+    document.querySelectorAll('#slideViewer .slide-card p').forEach(p => p.style.color = t.slideText);
+    document.getElementById('readerChapter').textContent = '第 ' + (index+1) + ' / ' + total + ' 页';
+    document.getElementById('progressFill').style.width = ((index+1)/total*100)+'%';
+    document.getElementById('progressText').textContent = Math.round((index+1)/total*100)+'%';
+    document.getElementById('pageText').textContent = (index+1) + ' / ' + total;
+  }
+
+  // ============================================================
+  //  书架渲染
+  // ============================================================
+  async function refreshLibrary(){
+    const books = await dbGetAll();
+    books.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+    const grid = document.getElementById('libGrid');
+    const empty = document.getElementById('libEmpty');
+    grid.innerHTML = '';
+    if(!books.length){ empty.style.display='flex'; return; }
+    empty.style.display = 'none';
+    for(const b of books){
+      const card = document.createElement('div');
+      card.className = 'book-card';
+      const cover = b.cover
+        ? `<img src="${b.cover}" alt="${esc(b.title)}">`
+        : `<div class="book-cover-placeholder" style="background:${placeholderBg(b.title)}">${esc(b.title)}</div>`;
+      card.innerHTML = `
+        <div class="book-cover-wrap">
+          <span class="type-badge ${b.type}">${b.type}</span>
+          ${cover}
+          ${b.progress>0?`<div class="book-progress-bar" style="width:${(b.progress*100).toFixed(0)}%"></div>`:''}
+          <button class="book-delete" data-id="${b.id}">&times;</button>
+        </div>
+        <div class="book-info">
+          <div class="book-title">${esc(b.title)}</div>
+          <div class="book-author">${esc(b.author)}</div>
+        </div>`;
+      card.addEventListener('click', e => { if(!e.target.classList.contains('book-delete')) openReader(b.id); });
+      card.querySelector('.book-delete').addEventListener('click', async e => {
+        e.stopPropagation(); await dbDelete(b.id); refreshLibrary();
+      });
+      grid.appendChild(card);
+    }
+  }
+  function placeholderBg(t){let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%360;return `linear-gradient(135deg,hsl(${h},35%,22%),hsl(${(h+40)%360},35%,14%))`}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+  // ============================================================
+  //  阅读器 — 统一入口
+  // ============================================================
+  async function openReader(bookId){
+    const stored = await dbGet(bookId);
+    if(!stored) return;
+    readerState.bookId = bookId;
+    readerState.type = stored.type;
+    document.getElementById('libraryView').style.display = 'none';
+    document.getElementById('readerView').classList.add('active');
+    // 隐藏全部容器
+    document.getElementById('epubViewer').style.display = 'none';
+    document.getElementById('pdfCanvas').style.display = 'none';
+    document.getElementById('slideViewer').style.display = 'none';
+
+    showLoading('正在打开《' + stored.title + '》…');
+    try{
+      // 设置背景色相为该书封面的主色调（Folia 风格）
+      if(stored.hueData && stored.hueData.hue != null){
+        bookHue = stored.hueData.hue;
+        bookSat = Math.max(0.3, stored.hueData.sat || 0.4);
+        bookLight = Math.max(0.1, Math.min(0.3, stored.hueData.light || 0.2));
+        hueTarget = bookHue;
+        console.log('[bg] book hue=' + bookHue + ' sat=' + bookSat + ' light=' + bookLight);
+      } else {
+        // 没有封面：用标题哈希
+        let h = 0;
+        for(let i=0;i<(stored.title||'').length;i++) h=(h*31+stored.title.charCodeAt(i))%360;
+        bookHue = h; bookSat = 0.35; bookLight = 0.15;
+        hueTarget = h;
+      }
+      if(stored.type === 'epub') await openEpub(stored);
+      else if(stored.type === 'pdf') await openPdf(stored);
+      else if(stored.type === 'pptx') await openPptx(stored);
+      // 字号按钮只对 EPUB 显示
+      document.getElementById('btnFontDown').classList.toggle('hidden', stored.type !== 'epub');
+      document.getElementById('btnFontUp').classList.toggle('hidden', stored.type !== 'epub');
+    }catch(e){
+      showToast('打开失败：' + (e.message||''));
+      console.error('[reader]', e);
+      closeReader();
+    }finally{
+      hideLoading();
+    }
+    showUI();
+  }
+
+  // ---- EPUB ----
+  async function openEpub(stored){
+    document.getElementById('epubViewer').style.display = '';
+    document.getElementById('epubViewer').innerHTML = '';
+    const copy = stored.data.slice(0);
+    readerState.epubBook = ePub(copy);
+    readerState.epubRendition = readerState.epubBook.renderTo('epubViewer',{
+      flow:'paginated', width:'100%', height:'100%', spread:'none',
+      allowScriptedContent: true
+    });
+    readerState.epubRendition.themes.register('night',{
+      'body':{
+        'background':'transparent !important','color':THEMES[currentTheme].epubText,
+        'font-family':'"Noto Serif SC","SimSun",serif',
+        'font-size': readerState.fontSize + '%','line-height':'1.8','padding':'0 80px',
+      },
+      'a':{ 'color':'#8b8edb' },
+      'img':{ 'max-width':'100%','height':'auto' },
+    });
+    // 注册全部风格
+    for(const tk of ['dark','light','sepia','night']){
+      const tt = THEMES[tk];
+      readerState.epubRendition.themes.register(tk, {
+        'body':{
+          'background':tt.epubBg + ' !important','color':tt.epubText,
+          'font-family':'"Noto Serif SC","SimSun",serif',
+          'font-size': readerState.fontSize + '%','line-height':'1.8','padding':'0 60px',
+        },
+        'a':{ 'color':'#8b8edb' },
+        'img':{ 'max-width':'100%','height':'auto','filter':tt.pdfFilter },
+      });
+    }
+    readerState.epubRendition.themes.select(currentTheme);
+    readerState.epubRendition.display(stored.position || undefined);
+    readerState.epubRendition.on('rendered',(s,view)=>{
+      try{ const d=view.document; if(d){d.documentElement.style.background='transparent';d.body.style.background='transparent';}}catch(e){}
+    });
+    readerState.epubRendition.on('relocated', async loc=>{
+      if(!loc||!loc.start) return;
+      const pct = loc.start.percentage || 0;
+      document.getElementById('progressFill').style.width = (pct*100)+'%';
+      document.getElementById('progressText').textContent = Math.round(pct*100)+'%';
+      const section = readerState.epubBook.spine.get(loc.start.href);
+      if(section && section.label) document.getElementById('readerChapter').textContent = section.label;
+      stored.progress = pct; stored.position = loc.start.cfi;
+      await dbPut(stored);
+    });
+    const nav = await readerState.epubBook.loaded.navigation;
+    renderTOC(nav.toc, (item)=>{ readerState.epubRendition.display(item.href); });
+    document.getElementById('tocTitle').textContent = '目录';
+  }
+
+  // ---- PDF ----
+  async function openPdf(stored){
+    document.getElementById('pdfCanvas').style.display = '';
+    const copy = stored.data.slice(0);
+    readerState.pdfDoc = await pdfjsLib.getDocument({ data: copy }).promise;
+    readerState.pdfPage = stored.position || 1;
+    await renderPdfPage(stored);
+    renderPdfTOC(stored);
+    document.getElementById('tocTitle').textContent = '页面';
+  }
+
+  async function renderPdfPage(stored){
+    const page = await readerState.pdfDoc.getPage(readerState.pdfPage);
+    const vp1 = page.getViewport({ scale: 1 });
+    const scale = Math.min((innerWidth - 120) / vp1.width, (innerHeight - 180) / vp1.height);
+    const vp = page.getViewport({ scale: Math.max(0.4, scale) });
+    const canvas = document.getElementById('pdfCanvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    const total = readerState.pdfDoc.numPages;
+    const pct = readerState.pdfPage / total;
+    document.getElementById('progressFill').style.width = (pct*100)+'%';
+    document.getElementById('progressText').textContent = Math.round(pct*100)+'%';
+    document.getElementById('pageText').textContent = readerState.pdfPage + ' / ' + total;
+    document.getElementById('readerChapter').textContent = '第 ' + readerState.pdfPage + ' 页';
+    stored.progress = pct; stored.position = readerState.pdfPage;
+    await dbPut(stored);
+  }
+
+  function renderPdfTOC(stored){
+    const total = readerState.pdfDoc.numPages;
+    const list = document.getElementById('tocList');
+    list.innerHTML = '';
+    // 简化：列出所有页码
+    for(let i = 1; i <= total; i++){
+      const el = document.createElement('div');
+      el.className = 'toc-item' + (i === readerState.pdfPage ? ' active' : '');
+      el.textContent = '第 ' + i + ' 页';
+      el.addEventListener('click', async ()=>{
+        readerState.pdfPage = i;
+        await renderPdfPage(stored);
+        document.getElementById('tocPanel').classList.remove('open');
+        renderPdfTOC(stored);
+      });
+      list.appendChild(el);
+    }
+  }
+
+  // ---- PPTX ----
+  async function openPptx(stored){
+    document.getElementById('slideViewer').style.display = '';
+    readerState.pptxSlides = await parsePptxSlides(stored.data);
+    readerState.pptxSlide = stored.position || 0;
+    renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide] || [], readerState.pptxSlide, readerState.pptxSlides.length);
+    // 目录
+    const list = document.getElementById('tocList');
+    list.innerHTML = '';
+    readerState.pptxSlides.forEach((texts, i) => {
+      const el = document.createElement('div');
+      el.className = 'toc-item' + (i === readerState.pptxSlide ? ' active' : '');
+      el.textContent = '第 ' + (i+1) + ' 页' + (texts[0] ? ' · ' + texts[0].slice(0,20) : '');
+      el.addEventListener('click', async ()=>{
+        readerState.pptxSlide = i;
+        renderPptxSlide(texts, i, readerState.pptxSlides.length);
+        stored.progress = (i+1)/readerState.pptxSlides.length;
+        stored.position = i;
+        await dbPut(stored);
+        document.getElementById('tocPanel').classList.remove('open');
+        openPptx_updateTOC(stored);
+      });
+      list.appendChild(el);
+    });
+    document.getElementById('tocTitle').textContent = '幻灯片';
+    // 保存进度
+    stored.progress = (readerState.pptxSlide+1)/readerState.pptxSlides.length;
+    stored.position = readerState.pptxSlide;
+    await dbPut(stored);
+  }
+  function openPptx_updateTOC(stored){
+    const list = document.getElementById('tocList');
+    [...list.children].forEach((el, i) => {
+      el.classList.toggle('active', i === readerState.pptxSlide);
+    });
+  }
+
+  // ---- 目录（EPUB） ----
+  function renderTOC(toc, onClick){
+    const list = document.getElementById('tocList');
+    list.innerHTML = '';
+    (function walk(items, depth){
+      for(const item of items){
+        const el = document.createElement('div');
+        el.className = 'toc-item' + (depth > 0 ? ' toc-sub' : '');
+        el.textContent = item.label.trim();
+        el.addEventListener('click', ()=>{ onClick(item); document.getElementById('tocPanel').classList.remove('open'); });
+        list.appendChild(el);
+        if(item.subitems) walk(item.subitems, depth+1);
+      }
+    })(toc, 0);
+  }
+
+  // ============================================================
+  //  翻页 / 导航
+  // ============================================================
+  async function goNext(){
+    const s = readerState;
+    if(s.type === 'epub' && s.epubRendition) s.epubRendition.next();
+    else if(s.type === 'pdf' && s.pdfDoc && s.pdfPage < s.pdfDoc.numPages){
+      s.pdfPage++; const stored = await dbGet(s.bookId); await renderPdfPage(stored); renderPdfTOC(stored);
+    } else if(s.type === 'pptx' && s.pptxSlide < s.pptxSlides.length - 1){
+      s.pptxSlide++;
+      renderPptxSlide(s.pptxSlides[s.pptxSlide], s.pptxSlide, s.pptxSlides.length);
+      const stored = await dbGet(s.bookId); stored.position = s.pptxSlide; stored.progress = (s.pptxSlide+1)/s.pptxSlides.length; await dbPut(stored);
+      openPptx_updateTOC(stored);
+    }
+    showUI();
+  }
+  async function goPrev(){
+    const s = readerState;
+    if(s.type === 'epub' && s.epubRendition) s.epubRendition.prev();
+    else if(s.type === 'pdf' && s.pdfDoc && s.pdfPage > 1){
+      s.pdfPage--; const stored = await dbGet(s.bookId); await renderPdfPage(stored); renderPdfTOC(stored);
+    } else if(s.type === 'pptx' && s.pptxSlide > 0){
+      s.pptxSlide--;
+      renderPptxSlide(s.pptxSlides[s.pptxSlide], s.pptxSlide, s.pptxSlides.length);
+      const stored = await dbGet(s.bookId); stored.position = s.pptxSlide; stored.progress = (s.pptxSlide+1)/s.pptxSlides.length; await dbPut(stored);
+      openPptx_updateTOC(stored);
+    }
+    showUI();
+  }
+
+  function closeReader(){
+    const s = readerState;
+    if(s.epubRendition){ try{s.epubRendition.destroy();}catch(e){} }
+    if(s.epubBook){ try{s.epubBook.destroy();}catch(e){} }
+    if(s.pdfDoc){ try{s.pdfDoc.destroy();}catch(e){} }
+    s.epubRendition = s.epubBook = s.pdfDoc = null;
+    s.pptxSlides = [];
+    s.bookId = null; s.type = null;
+    bookHue = null;  // 回到书架时恢复自由漂移
+    document.getElementById('readerView').classList.remove('active');
+    document.getElementById('libraryView').style.display = '';
+    refreshLibrary();
+  }
+
+  // ============================================================
+  //  UI 自动隐藏
+  // ============================================================
+  function showUI(){
+    document.getElementById('readerTopbar').classList.remove('hidden');
+    document.getElementById('readerControls').classList.remove('hidden');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(()=>{
+      if(!document.getElementById('settingsPanel').classList.contains('show')){
+        document.getElementById('readerTopbar').classList.add('hidden');
+        document.getElementById('readerControls').classList.add('hidden');
+      }
+    }, 3500);
+  }
+
+  // ---- 风格切换 ----
+  function applyTheme(theme){
+    currentTheme = theme;
+    localStorage.setItem('echo-theme', theme);
+    // body class
+    document.body.className = theme === 'dark' ? '' : 'theme-' + theme;
+    // 主题按钮高亮
+    document.querySelectorAll('.theme-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === theme);
+    });
+    // EPUB 主题
+    if(readerState.epubRendition){
+      const t = THEMES[theme];
+      readerState.epubRendition.themes.register(theme, {
+        'body': {
+          'background': t.epubBg + ' !important',
+          'color': t.epubText,
+          'font-family': '"Noto Serif SC","SimSun",serif',
+          'font-size': readerState.fontSize + '%',
+          'line-height': '1.8',
+          'padding': '0 60px',
+        },
+        'a': { 'color': '#8b8edb' },
+        'img': { 'max-width': '100%', 'height': 'auto', 'filter': t.pdfFilter },
+      });
+      readerState.epubRendition.themes.select(theme);
+    }
+    // PDF 滤镜
+    if(readerState.type === 'pdf'){
+      document.getElementById('pdfCanvas').style.filter = THEMES[theme].pdfFilter;
+    }
+    // PPTX 卡片
+    if(readerState.type === 'pptx' && readerState.pptxSlides.length){
+      renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide], readerState.pptxSlide, readerState.pptxSlides.length);
+    }
+    console.log('[theme] switched to ' + theme);
+  }
+
+  // ---- 亮度 ----
+  function applyBrightness(val){
+    brightness = val;
+    localStorage.setItem('echo-brightness', val);
+    const opacity = (100 - val) / 100 * 0.75;
+    document.getElementById('brightnessOverlay').style.background = `rgba(0,0,0,${opacity})`;
+  }
+
+  // ============================================================
+  //  动态背景
+  // ============================================================
+  const bgCanvas = document.getElementById('bgCanvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  let hue = 230, hueTarget = 230;
+  let bookHue = null, bookSat = 0.45, bookLight = 0.18;
+  function resizeBg(){bgCanvas.width=innerWidth;bgCanvas.height=innerHeight}
+  window.addEventListener('resize', resizeBg); resizeBg();
+  function drawBg(){
+    const w = bgCanvas.width, h = bgCanvas.height;
+    const reading = document.getElementById('readerView').classList.contains('active');
+    bgCtx.fillStyle = '#08080f'; bgCtx.fillRect(0,0,w,h);
+    const t = Date.now() * 0.0002;
+    const layers = reading ? 3 : 4;
+    const energy = reading ? 0.5 : 1;
+
+    // 阅读时：背景色由当前书籍封面决定（Folia 风格）
+    const baseHue = reading && bookHue != null ? bookHue : hue;
+    const baseSat = reading && bookHue != null ? bookSat * 100 : 45;
+    const baseLight = reading && bookHue != null ? bookLight * 100 : 9;
+
+    for(let i=0;i<layers;i++){
+      const ph = t + i*2.1;
+      const cx = w/2 + Math.cos(ph)*w*0.22*energy;
+      const cy = h/2 + Math.sin(ph*0.7)*h*0.22*energy;
+      const r = Math.max(50, (w+h)*(0.12+i*0.1));
+      const lh = (baseHue + i*22) % 360;
+      const opacity = (0.35 + i*0.05) * energy;
+      const g = bgCtx.createRadialGradient(cx,cy,0,cx,cy,r);
+      g.addColorStop(0, `hsla(${lh},${baseSat}%,${baseLight + i*2}%,${opacity})`);
+      g.addColorStop(1, 'hsla(0,0%,0%,0)');
+      bgCtx.fillStyle = g; bgCtx.fillRect(0,0,w,h);
+    }
+    // 非阅读时才自由漂移色相
+    if(!reading){
+      hue += (hueTarget-hue)*0.003;
+      if(Math.abs(hueTarget-hue)<0.5) hueTarget = (hue + 30 + Math.random()*60)%360;
+    } else {
+      // 阅读时缓慢回到书的色相
+      hue += (bookHue - hue)*0.01;
+    }
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+
+  // ============================================================
+  //  辅助
+  // ============================================================
+  function showLoading(msg){document.getElementById('loadingText').textContent=msg;document.getElementById('loading').classList.add('show')}
+  function hideLoading(){document.getElementById('loading').classList.remove('show')}
+  function showToast(msg, success){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (success ? ' success' : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = 'toast' + (success ? ' success' : ''); }, 5000);
+  }
+
+  // ============================================================
+  //  事件
+  // ============================================================
+  document.getElementById('btnImport').addEventListener('click', ()=>document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change', async e=>{
+    for(const f of e.target.files) await importFile(f);
+    e.target.value = ''; refreshLibrary();
+  });
+  let dragCnt = 0;
+  const dropOv = document.getElementById('dropOverlay');
+  window.addEventListener('dragenter', e=>{e.preventDefault();dragCnt++;dropOv.classList.add('show')});
+  window.addEventListener('dragleave', e=>{e.preventDefault();dragCnt--;if(dragCnt<=0)dropOv.classList.remove('show')});
+  window.addEventListener('dragover', e=>e.preventDefault());
+  window.addEventListener('drop', async e=>{
+    e.preventDefault();dragCnt=0;dropOv.classList.remove('show');
+    const files = [...e.dataTransfer.files].filter(f=>/\.(epub|pdf|pptx|ppt)$/i.test(f.name));
+    for(const f of files) await importFile(f);
+    refreshLibrary();
+  });
+  document.getElementById('btnBack').addEventListener('click', closeReader);
+  document.getElementById('btnFontUp').addEventListener('click', ()=>{
+    readerState.fontSize = Math.min(160, readerState.fontSize+10);
+    if(readerState.epubRendition) readerState.epubRendition.themes.fontSize(readerState.fontSize+'%');
+  });
+  document.getElementById('btnFontDown').addEventListener('click', ()=>{
+    readerState.fontSize = Math.max(70, readerState.fontSize-10);
+    if(readerState.epubRendition) readerState.epubRendition.themes.fontSize(readerState.fontSize+'%');
+  });
+  document.getElementById('btnToc').addEventListener('click', ()=>document.getElementById('tocPanel').classList.toggle('open'));
+  document.getElementById('tocClose').addEventListener('click', ()=>document.getElementById('tocPanel').classList.remove('open'));
+  document.getElementById('progressBar').addEventListener('click', async e=>{
+    const s = readerState;
+    if(!s.bookId) return;
+    const pct = (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth;
+    const stored = await dbGet(s.bookId);
+    if(s.type === 'epub' && s.epubBook){
+      s.epubBook.locations.ready.then(()=>{ const cfi = s.epubBook.locations.cfiFromPercentage(pct); s.epubRendition.display(cfi); });
+    } else if(s.type === 'pdf' && s.pdfDoc){
+      s.pdfPage = Math.max(1, Math.min(s.pdfDoc.numPages, Math.ceil(pct * s.pdfDoc.numPages)));
+      await renderPdfPage(stored); renderPdfTOC(stored);
+    } else if(s.type === 'pptx' && s.pptxSlides.length){
+      s.pptxSlide = Math.max(0, Math.min(s.pptxSlides.length-1, Math.floor(pct * s.pptxSlides.length)));
+      renderPptxSlide(s.pptxSlides[s.pptxSlide], s.pptxSlide, s.pptxSlides.length);
+      stored.position = s.pptxSlide; stored.progress = (s.pptxSlide+1)/s.pptxSlides.length; await dbPut(stored);
+      openPptx_updateTOC(stored);
+    }
+  });
+  // ===== 设置面板 =====
+  document.getElementById('btnSettings').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('settingsPanel').classList.toggle('show');
+  });
+  document.getElementById('settingsPanel').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('brightnessSlider').addEventListener('input', e => {
+    applyBrightness(parseInt(e.target.value));
+  });
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+  });
+
+  document.addEventListener('keydown', e=>{
+    if(!document.getElementById('readerView').classList.contains('active')) return;
+    if(e.key==='ArrowLeft') goPrev();
+    if(e.key==='ArrowRight') goNext();
+    if(e.key==='Escape'){
+      if(document.getElementById('tocPanel').classList.contains('open')) document.getElementById('tocPanel').classList.remove('open');
+      else closeReader();
+    }
+    showUI();
+  });
+  document.getElementById('readerView').addEventListener('mousemove', showUI);
+
+  // ===== 触摸滑动翻页（手机） =====
+  let touchX = 0, touchY = 0, touchT = 0;
+  const rv = document.getElementById('readerView');
+  rv.addEventListener('touchstart', e => {
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+    touchT = Date.now();
+  }, { passive: true });
+  rv.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    const dy = e.changedTouches[0].clientY - touchY;
+    const dt = Date.now() - touchT;
+    // 水平滑动：左右翻页
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5){
+      if(dx > 0) goPrev(); else goNext();
+    }
+    // 点击：切换 UI 显示
+    else if(dt < 300 && Math.abs(dx) < 15 && Math.abs(dy) < 15){
+      // 中心点击才切换，边缘留给按钮
+      const cx = innerWidth / 2;
+      if(Math.abs(touchX - cx) < innerWidth * 0.3){
+        const tb = document.getElementById('readerTopbar');
+        if(tb.classList.contains('hidden')) showUI();
+        else { tb.classList.add('hidden'); document.getElementById('readerControls').classList.add('hidden'); }
+      } else {
+        showUI();
+      }
+    }
+    showUI();
+  }, { passive: true });
+
+  // 阻止移动端双击缩放
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if(now - lastTouchEnd < 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  window.addEventListener('resize', async ()=>{
+    // PDF 需要重新渲染以适配新窗口大小
+    if(readerState.type === 'pdf' && readerState.pdfDoc && readerState.bookId){
+      const stored = await dbGet(readerState.bookId);
+      await renderPdfPage(stored);
+    }
+  });
+
+  // ============================================================
+  //  启动
+  // ============================================================
+  // 注册 Service Worker（离线缓存）
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(
+      () => console.log('[sw] registered'),
+      e => console.warn('[sw] failed:', e)
+    );
+  }
+
+  openDB().then(()=>{
+    // 应用保存的风格和亮度
+    applyTheme(currentTheme);
+    applyBrightness(brightness);
+    document.getElementById('brightnessSlider').value = brightness;
+    refreshLibrary();
+    if(typeof ePub === 'undefined') showToast('epub.js 未加载，EPUB 功能不可用');
+    if(typeof pdfjsLib === 'undefined') showToast('pdf.js 未加载，PDF 功能不可用');
+    if(typeof JSZip === 'undefined') showToast('JSZip 未加载，PPTX 功能不可用');
+  });
+
+})();
+</script>
+</body>
+</html>
