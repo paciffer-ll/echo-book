@@ -293,6 +293,18 @@
         <input type="range" id="brightnessSlider" min="20" max="100" value="100">
       </div>
       <div class="settings-row">
+        <label>字号</label>
+        <input type="range" id="fontSizeSlider" min="70" max="160" step="5" value="100">
+      </div>
+      <div class="settings-row">
+        <label>行距</label>
+        <input type="range" id="lineHeightSlider" min="1.2" max="2.6" step="0.1" value="1.8">
+      </div>
+      <div class="settings-row">
+        <label>边距</label>
+        <input type="range" id="paddingSlider" min="8" max="96" step="4" value="28">
+      </div>
+      <div class="settings-row">
         <label>风格</label>
         <button class="theme-btn theme-dark active" data-theme="dark" title="暗色"></button>
         <button class="theme-btn theme-light" data-theme="light" title="亮色"></button>
@@ -345,7 +357,9 @@ if(typeof pdfjsLib !== 'undefined')
     epubRendition: null, epubBook: null,
     pdfDoc: null, pdfPage: 1,
     pptxSlides: [], pptxSlide: 0,
-    fontSize: 100,
+    fontSize: parseInt(localStorage.getItem('echo-fontsize') || '100'),
+    lineHeight: parseFloat(localStorage.getItem('echo-lineheight') || '1.8'),
+    pagePadding: parseInt(localStorage.getItem('echo-padding') || '28'),
   };
   let hideTimer = null;
   let libFeatured = null;
@@ -731,6 +745,8 @@ if(typeof pdfjsLib !== 'undefined')
       hideLoading();
     }
     showUI();
+    // 阅读时允许手指缩放（书架保持锁定避免误触）
+    setZoomable(true);
   }
 
   // ---- EPUB ----
@@ -747,7 +763,7 @@ if(typeof pdfjsLib !== 'undefined')
       'body':{
         'background':'transparent !important','color':THEMES[currentTheme].epubText,
         'font-family':'"Noto Serif SC","SimSun",serif',
-        'font-size': readerState.fontSize + '%','line-height':'1.8','padding':'0 80px',
+        'font-size': readerState.fontSize + '%','line-height': readerState.lineHeight + '','padding':'0 ' + readerState.pagePadding + 'px',
       },
       'a':{ 'color':'#8b8edb' },
       'img':{ 'max-width':'100%','height':'auto' },
@@ -759,7 +775,7 @@ if(typeof pdfjsLib !== 'undefined')
         'body':{
           'background':tt.epubBg + ' !important','color':tt.epubText,
           'font-family':'"Noto Serif SC","SimSun",serif',
-          'font-size': readerState.fontSize + '%','line-height':'1.8','padding':'0 60px',
+          'font-size': readerState.fontSize + '%','line-height': readerState.lineHeight + '','padding':'0 ' + readerState.pagePadding + 'px',
         },
         'a':{ 'color':'#8b8edb' },
         'img':{ 'max-width':'100%','height':'auto','filter':tt.pdfFilter },
@@ -810,10 +826,18 @@ if(typeof pdfjsLib !== 'undefined')
   async function renderPdfPage(stored){
     const page = await readerState.pdfDoc.getPage(readerState.pdfPage);
     const vp1 = page.getViewport({ scale: 1 });
-    const scale = Math.min((innerWidth - 120) / vp1.width, (innerHeight - 180) / vp1.height);
-    const vp = page.getViewport({ scale: Math.max(0.4, scale) });
+    // 移动端控件是浮层，PDF 可占更多空间；桌面端留出控件余量
+    const mH = innerWidth < 768 ? 16 : 120;
+    const mV = innerWidth < 768 ? 90 : 180;
+    const cssScale = Math.min((innerWidth - mH*2) / vp1.width, (innerHeight - mV) / vp1.height);
+    // 按设备像素比渲染，避免高分屏手机上 PDF 模糊
+    const dpr = window.devicePixelRatio || 1;
+    const vp = page.getViewport({ scale: Math.max(0.4, cssScale) * dpr });
     const canvas = document.getElementById('pdfCanvas');
     canvas.width = vp.width; canvas.height = vp.height;
+    // 用 CSS 像素控制显示尺寸，位图分辨率走设备像素
+    canvas.style.width = (vp.width / dpr) + 'px';
+    canvas.style.height = (vp.height / dpr) + 'px';
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
     const total = readerState.pdfDoc.numPages;
     const pct = readerState.pdfPage / total;
@@ -940,6 +964,8 @@ if(typeof pdfjsLib !== 'undefined')
     document.getElementById('readerView').classList.remove('active');
     document.getElementById('libraryView').style.display = '';
     refreshLibrary();
+    // 回到书架后关闭伸缩（避免误触缩放格子）
+    setZoomable(false);
   }
 
   // ============================================================
@@ -958,6 +984,25 @@ if(typeof pdfjsLib !== 'undefined')
   }
 
   // ---- 风格切换 ----
+  // 用当前 theme + 最新字号/行距/边距重新应用 EPUB 主题
+  function reapplyEpubTheme(){
+    if(!readerState.epubRendition) return;
+    const t = THEMES[currentTheme];
+    readerState.epubRendition.themes.register(currentTheme, {
+      'body': {
+        'background': t.epubBg + ' !important',
+        'color': t.epubText,
+        'font-family': '"Noto Serif SC","SimSun",serif',
+        'font-size': readerState.fontSize + '%',
+        'line-height': String(readerState.lineHeight),
+        'padding': '0 ' + readerState.pagePadding + 'px',
+      },
+      'a': { 'color': '#8b8edb' },
+      'img': { 'max-width': '100%', 'height': 'auto', 'filter': t.pdfFilter },
+    });
+    readerState.epubRendition.themes.select(currentTheme);
+  }
+
   function applyTheme(theme){
     currentTheme = theme;
     localStorage.setItem('echo-theme', theme);
@@ -969,20 +1014,7 @@ if(typeof pdfjsLib !== 'undefined')
     });
     // EPUB 主题
     if(readerState.epubRendition){
-      const t = THEMES[theme];
-      readerState.epubRendition.themes.register(theme, {
-        'body': {
-          'background': t.epubBg + ' !important',
-          'color': t.epubText,
-          'font-family': '"Noto Serif SC","SimSun",serif',
-          'font-size': readerState.fontSize + '%',
-          'line-height': '1.8',
-          'padding': '0 60px',
-        },
-        'a': { 'color': '#8b8edb' },
-        'img': { 'max-width': '100%', 'height': 'auto', 'filter': t.pdfFilter },
-      });
-      readerState.epubRendition.themes.select(theme);
+      reapplyEpubTheme();
     }
     // PDF 滤镜
     if(readerState.type === 'pdf'){
@@ -1072,6 +1104,14 @@ if(typeof pdfjsLib !== 'undefined')
   // ============================================================
   function showLoading(msg){document.getElementById('loadingText').textContent=msg;document.getElementById('loading').classList.add('show')}
   function hideLoading(){document.getElementById('loading').classList.remove('show')}
+  // 动态切换 viewport 缩放：阅读时允许手指缩放，书架时锁定
+  function setZoomable(on){
+    const m = document.querySelector('meta[name="viewport"]');
+    if(!m) return;
+    m.setAttribute('content', on
+      ? 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover'
+      : 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+  }
   function showToast(msg, success){
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1100,14 +1140,30 @@ if(typeof pdfjsLib !== 'undefined')
     refreshLibrary();
   });
   document.getElementById('btnBack').addEventListener('click', closeReader);
-  document.getElementById('btnFontUp').addEventListener('click', ()=>{
-    readerState.fontSize = Math.min(160, readerState.fontSize+10);
+  // ---- 字号：滑块 + A−/A＋ 按钮共用一个 setFontSize ----
+  function setFontSize(v){
+    readerState.fontSize = Math.max(70, Math.min(160, Math.round(v)));
+    localStorage.setItem('echo-fontsize', String(readerState.fontSize));
+    const slider = document.getElementById('fontSizeSlider');
+    if(slider) slider.value = readerState.fontSize;
     if(readerState.epubRendition) readerState.epubRendition.themes.fontSize(readerState.fontSize+'%');
-  });
-  document.getElementById('btnFontDown').addEventListener('click', ()=>{
-    readerState.fontSize = Math.max(70, readerState.fontSize-10);
-    if(readerState.epubRendition) readerState.epubRendition.themes.fontSize(readerState.fontSize+'%');
-  });
+  }
+  document.getElementById('btnFontUp').addEventListener('click', ()=> setFontSize(readerState.fontSize + 10));
+  document.getElementById('btnFontDown').addEventListener('click', ()=> setFontSize(readerState.fontSize - 10));
+  document.getElementById('fontSizeSlider').addEventListener('input', e => setFontSize(parseInt(e.target.value)));
+  // ---- 行距 / 边距（EPUB）----
+  function setLineHeight(v){
+    readerState.lineHeight = Math.max(1.2, Math.min(2.6, Math.round(v*10)/10));
+    localStorage.setItem('echo-lineheight', String(readerState.lineHeight));
+    reapplyEpubTheme();
+  }
+  function setPadding(v){
+    readerState.pagePadding = Math.max(8, Math.min(96, Math.round(v/4)*4));
+    localStorage.setItem('echo-padding', String(readerState.pagePadding));
+    reapplyEpubTheme();
+  }
+  document.getElementById('lineHeightSlider').addEventListener('input', e => setLineHeight(parseFloat(e.target.value)));
+  document.getElementById('paddingSlider').addEventListener('input', e => setPadding(parseInt(e.target.value)));
   document.getElementById('btnToc').addEventListener('click', ()=>document.getElementById('tocPanel').classList.toggle('open'));
   document.getElementById('tocClose').addEventListener('click', ()=>document.getElementById('tocPanel').classList.remove('open'));
   document.getElementById('progressBar').addEventListener('click', async e=>{
@@ -1287,6 +1343,9 @@ if(typeof pdfjsLib !== 'undefined')
     applyBrightness(brightness);
     applyWallPrefs();
     document.getElementById('brightnessSlider').value = brightness;
+    document.getElementById('fontSizeSlider').value = readerState.fontSize;
+    document.getElementById('lineHeightSlider').value = readerState.lineHeight;
+    document.getElementById('paddingSlider').value = readerState.pagePadding;
     refreshLibrary();
     if(typeof ePub === 'undefined') showToast('epub.js 未加载，EPUB 功能不可用');
     if(typeof pdfjsLib === 'undefined') showToast('pdf.js 未加载，PDF 功能不可用');

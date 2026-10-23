@@ -26,6 +26,10 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setAllowFileAccessFromFileURLs(true);
         s.setAllowUniversalAccessFromFileURLs(true);
+        // 允许缩放：支持手指捏合放大（配合 viewport user-scalable）
+        s.setSupportZoom(true);
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
 
         webView.setWebViewClient(new WebViewClient());
         // 关键：接管网页里的 <input type="file">，拉起系统文件选择器

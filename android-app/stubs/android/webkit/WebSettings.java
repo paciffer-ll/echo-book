@@ -5,6 +5,10 @@ public class WebSettings {
     public void setAllowFileAccess(boolean b) {}
     public void setAllowContentAccess(boolean b) {}
     public void setBuiltInZoomControls(boolean b) {}
+    public void setDisplayZoomControls(boolean b) {}
+    public void setSupportZoom(boolean b) {}
+    public void setUseWideViewPort(boolean b) {}
+    public void setLoadWithOverviewMode(boolean b) {}
     public void setDatabaseEnabled(boolean b) {}
     public void setMediaPlaybackRequiresUserGesture(boolean b) {}
     public void setAllowFileAccessFromFileURLs(boolean b) {}
