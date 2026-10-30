@@ -2,7 +2,7 @@
 Echo Books APK 构建脚本
 编译 Java 桩 → DEX → AXML 编码 → 打包签名对齐 → EchoBooks.apk
 """
-import struct, os, zipfile, subprocess, sys, shutil, re
+import struct, os, zipfile, subprocess, sys, shutil, re, json
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -173,13 +173,27 @@ def bump_version():
     text = text.replace(f'android:versionCode="{old}"', f'android:versionCode="{new}"', 1)
     mf.write_text(text, encoding='utf-8')
     print(f'[version] versionCode {old} -> {new}')
+    name_match = re.search(r'android:versionName="([^"]+)"', text)
+    manifest_path = BASE / 'manifest.json'
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8-sig'))
+            manifest['version'] = name_match.group(1) if name_match else '1.1.0'
+            manifest['build'] = new
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2) + '\n',
+                encoding='utf-8',
+            )
+            print(f'[version] PWA manifest -> {manifest["version"]} build {new}')
+        except Exception as exc:
+            print(f'[version] 警告：PWA manifest 更新失败：{exc}')
 
 def main():
     jdk, bt = find_jdk(), find_bt()
     env = {**os.environ, 'JAVA_HOME': str(jdk), 'PATH': f'{jdk/"bin"};{os.environ["PATH"]}'}
-    # 每次构建前先同步最新资源并递增版本号
-    sync_assets()
     bump_version()
+    # 版本号递增后再同步，确保网页和 APK 内显示同一个 Build。
+    sync_assets()
     if OUT.exists(): shutil.rmtree(OUT)
     (OUT / 'classes').mkdir(parents=True)
 

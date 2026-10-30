@@ -16,20 +16,118 @@
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
   :root{
     --bg:#08080f; --surface:#10101c; --glass:rgba(16,16,28,.72);
-    --text:#d4d4dc; --text2:#7c7c94; --text3:#4a4a5c;
+    --text:#d4d4dc; --text2:#9898aa; --text3:#666679;
     --accent:#8b8edb; --accent-glow:rgba(139,142,219,.25);
     --border:rgba(255,255,255,.06);
+    --heading:#fff; --control-bg:rgba(255,255,255,.06);
+    --control-border:rgba(255,255,255,.07); --control-hover:rgba(255,255,255,.07);
+    --reader-chrome:rgba(8,8,15,.82); --panel-bg:rgba(8,8,15,.86);
+    --shadow:rgba(0,0,0,.5); --canvas-opacity:1;
     --serif:"Noto Serif SC","Source Han Serif SC","SimSun",serif;
     --sans:-apple-system,"Microsoft YaHei",sans-serif;
-    --epub:#6c8eef; --pdf:#e0584f; --ppt:#e8a838;
+    --epub:#6c8eef; --pdf:#e0584f; --ppt:#e8a838; --docx:#4a90d9;
   }
   html,body{width:100%;height:100%;overflow:hidden}
-  body{background:var(--bg);color:var(--text);font-family:var(--sans);user-select:none}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);user-select:none;
+    transition:background-color .4s ease,color .4s ease}
 
-  #bgCanvas{position:fixed;inset:0;z-index:0}
+  #bgCanvas{position:fixed;inset:0;z-index:0;opacity:var(--canvas-opacity);
+    transition:opacity .45s ease}
+
+  /* ===== 开机动画 ===== */
+  #bootOverlay{
+    position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;background:
+      radial-gradient(circle at 50% 46%,rgba(112,119,211,.16),transparent 28%),
+      radial-gradient(circle at 18% 84%,rgba(66,105,156,.11),transparent 34%),
+      radial-gradient(circle at 83% 16%,rgba(161,95,172,.09),transparent 32%),
+      linear-gradient(145deg,#080810 0%,#090b16 52%,#05060c 100%);
+    color:#f5f4ff;opacity:1;visibility:visible;
+    transition:opacity .58s ease,visibility 0s linear .58s;
+  }
+  #bootOverlay.boot-hidden{opacity:0;visibility:hidden;pointer-events:none}
+  #bootOverlay::after{content:'';position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 160px rgba(0,0,0,.63)}
+  .boot-glow{position:absolute;width:52vmax;height:52vmax;border-radius:50%;
+    background:radial-gradient(circle,rgba(101,112,220,.13),transparent 66%);
+    filter:blur(34px);pointer-events:none}
+  .boot-glow.g2{width:38vmax;height:38vmax;left:-14vmax;bottom:-20vmax;
+    background:radial-gradient(circle,rgba(67,128,165,.1),transparent 66%)}
+  .boot-glow.g3{width:34vmax;height:34vmax;right:-12vmax;top:-16vmax;
+    background:radial-gradient(circle,rgba(153,89,171,.09),transparent 66%)}
+  .boot-grain{position:absolute;inset:-20%;opacity:.1;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+    mix-blend-mode:soft-light}
+  .boot-rays{position:absolute;inset:-40% -24%;pointer-events:none;
+    background:linear-gradient(112deg,transparent 36%,rgba(214,220,255,.03) 48%,
+      rgba(255,255,255,.07) 50%,rgba(214,220,255,.02) 53%,transparent 66%);
+    transform:translateX(-18%) rotate(-2deg)}
+  .boot-core,.boot-orbit,.boot-streak,.boot-title,.boot-underline{position:absolute}
+  .boot-core{left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;
+    background:#f8f7ff;box-shadow:0 0 14px rgba(236,238,255,.95),
+      0 0 46px rgba(139,142,219,.72),0 0 100px rgba(97,105,202,.3);
+    opacity:0}
+  .boot-orbit{left:50%;top:50%;border:1px solid rgba(170,177,255,.16);
+    border-radius:50%;opacity:0;transform:translate(-50%,-50%) rotate(-7deg)}
+  .boot-orbit.a{width:min(34vw,340px);height:min(12vw,120px)}
+  .boot-orbit.b{width:min(54vw,520px);height:min(19vw,190px);
+    border-color:rgba(159,166,249,.09)}
+  .boot-streak{left:50%;top:50%;width:min(42vw,410px);height:1px;
+    margin-left:max(-205px,-21vw);opacity:0;
+    background:linear-gradient(90deg,transparent,rgba(200,205,255,.15) 31%,
+      #eef0ff 50%,rgba(200,205,255,.15) 69%,transparent);
+    box-shadow:0 0 22px rgba(139,142,219,.52)}
+  .boot-title{left:50%;top:50%;z-index:2;width:min(92vw,860px);
+    transform:translate(-50%,-50%);text-align:center}
+  .boot-title-line{display:flex;justify-content:center;align-items:baseline;
+    font-family:Georgia,"Times New Roman","Noto Serif SC",serif;
+    font-size:clamp(44px,7vw,78px);font-weight:400;line-height:1;
+    letter-spacing:.035em;white-space:nowrap;color:#f5f4ff}
+  .boot-letter{display:inline-block;opacity:0;filter:blur(9px);
+    transform:translateY(24px);text-shadow:0 0 30px rgba(186,191,255,.2)}
+  .boot-letter.space{width:.3em}
+  .boot-title-sheen{position:absolute;inset:0;color:transparent;pointer-events:none;
+    display:flex;justify-content:center;align-items:baseline;
+    font-family:Georgia,"Times New Roman","Noto Serif SC",serif;
+    font-size:clamp(44px,7vw,78px);line-height:1;letter-spacing:.035em;
+    white-space:nowrap;background:linear-gradient(104deg,transparent 28%,
+      rgba(255,255,255,.05) 40%,#fff 49%,#c7ccff 54%,transparent 67%);
+    background-size:240% 100%;background-clip:text;-webkit-background-clip:text;
+    opacity:0}
+  .boot-underline{left:50%;top:calc(50% + clamp(34px,5vw,55px));
+    width:66px;height:1px;margin-left:-33px;background:linear-gradient(90deg,
+      transparent,rgba(202,207,255,.82),transparent);
+    box-shadow:0 0 18px rgba(139,142,219,.45);transform:scaleX(0)}
+  #bootOverlay.is-playing .boot-core{animation:bootAppCore 1.15s cubic-bezier(.2,.8,.2,1) .18s both}
+  #bootOverlay.is-playing .boot-orbit.a{animation:bootAppOrbit 2.8s cubic-bezier(.2,.75,.25,1) .38s both}
+  #bootOverlay.is-playing .boot-orbit.b{animation:bootAppOrbit 3.3s cubic-bezier(.2,.75,.25,1) .52s both}
+  #bootOverlay.is-playing .boot-streak{animation:bootAppStreak 1.5s cubic-bezier(.18,.75,.2,1) .68s both}
+  #bootOverlay.is-playing .boot-letter{animation:bootAppLetter .82s cubic-bezier(.18,.8,.24,1) both;
+    animation-delay:calc(.84s + var(--i) * .075s)}
+  #bootOverlay.is-playing .boot-title-sheen{animation:bootAppSheen 1.5s cubic-bezier(.2,.7,.25,1) 1.55s both}
+  #bootOverlay.is-playing .boot-underline{animation:bootAppLine 1.05s cubic-bezier(.2,.8,.2,1) 2.05s both}
+  @keyframes bootAppCore{0%{opacity:0;transform:scale(.2)}28%{opacity:1;transform:scale(1.2)}
+    58%{opacity:.95;transform:scale(1)}100%{opacity:0;transform:scale(4.4)}}
+  @keyframes bootAppOrbit{0%{opacity:0;transform:translate(-50%,-50%) rotate(-7deg) scale(.58)}
+    34%{opacity:1}100%{opacity:.56;transform:translate(-50%,-50%) rotate(-7deg) scale(1)}}
+  @keyframes bootAppStreak{0%{opacity:0;transform:scaleX(.04) translateX(-80px);filter:blur(6px)}
+    36%{opacity:.9;filter:blur(1px)}100%{opacity:.08;transform:scaleX(1);filter:blur(0)}}
+  @keyframes bootAppLetter{0%{opacity:0;filter:blur(9px);transform:translateY(22px)}
+    62%{opacity:1;filter:blur(0)}100%{opacity:1;filter:blur(0);transform:translateY(0)}}
+  @keyframes bootAppSheen{0%{opacity:0;background-position:190% 0}
+    22%{opacity:.9}100%{opacity:0;background-position:-55% 0}}
+  @keyframes bootAppLine{0%{opacity:0;transform:scaleX(0)}
+    35%{opacity:1}100%{opacity:.82;transform:scaleX(1)}}
 
   /* ===== 书架 ===== */
-  #libraryView{position:relative;z-index:2;width:100%;height:100%;overflow-y:auto}
+  #libraryView{
+    --shelf-text:#f4f4fa; --shelf-muted:rgba(236,238,255,.62);
+    --shelf-dim:rgba(236,238,255,.38); --shelf-line:rgba(255,255,255,.08);
+    position:relative;z-index:2;width:100%;height:100%;overflow-y:auto;
+    color:var(--shelf-text);
+    background:linear-gradient(180deg,rgba(5,7,14,.9) 0%,rgba(4,6,12,.58) 44%,rgba(3,4,8,.88) 100%);
+    transition:opacity .38s ease,transform .38s cubic-bezier(.22,.8,.28,1)}
+  body.reader-open #libraryView{opacity:0;transform:scale(.992);pointer-events:none}
   #libraryView::-webkit-scrollbar{width:6px}
   #libraryView::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
   .lib-header{
@@ -37,71 +135,148 @@
     padding:28px 36px 20px;background:linear-gradient(to bottom,var(--bg) 60%,transparent);
     backdrop-filter:blur(12px);
   }
-  .lib-header h1{font-size:22px;font-weight:300;letter-spacing:1px;color:#fff}
+  .lib-header h1{font-size:22px;font-weight:300;letter-spacing:1px;color:var(--heading)}
   .lib-header h1 span{color:var(--accent)}
+  .lib-header-actions{display:flex;align-items:center;gap:8px}
   .btn-import{
-    background:rgba(139,142,219,.08);border:1px solid rgba(139,142,219,.15);
+    background:rgba(139,142,219,.08);
+    background:color-mix(in srgb,var(--accent) 9%,transparent);
+    border:1px solid rgba(139,142,219,.18);
+    border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
     border-radius:20px;padding:8px 18px;color:var(--accent);font-size:13px;
-    cursor:pointer;transition:background .2s,color .2s;
+    cursor:pointer;transition:background .2s,color .2s,transform .2s;
   }
-  .btn-import:hover{background:rgba(139,142,219,.18);color:#c0c4f0}
+  .btn-import:hover{background:color-mix(in srgb,var(--accent) 18%,transparent);
+    color:var(--heading);transform:translateY(-1px)}
+  .btn-app-settings{
+    background:var(--control-bg);border:1px solid var(--control-border);
+    border-radius:20px;padding:8px 14px;color:var(--text2);font-size:13px;
+    cursor:pointer;transition:background .2s,color .2s,transform .2s;
+  }
+  .btn-app-settings:hover{background:var(--control-hover);color:var(--heading);transform:translateY(-1px)}
 
-  /* ===== 书架 — Folia 经典网格：所有书等大方格 ===== */
+  /* ===== 书架 — Folia 经典网格：竖长方形封面 ===== */
   .lib-section{padding:0 36px}
   .lib-section-title{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:500;color:var(--text2);letter-spacing:1px;margin:26px 0 2px;padding-left:4px}
   .lib-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-  .lib-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px;padding:14px 4px 24px}
-  .lib-tile{display:flex;flex-direction:column;cursor:pointer;min-width:0}
-  .lib-tile .tile-cover{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.25,.1,.25,1),box-shadow .35s}
-  .lib-tile:hover .tile-cover{transform:translateY(-6px) scale(1.02);box-shadow:0 18px 46px var(--accent-glow),0 8px 20px rgba(0,0,0,.5)}
+  .lib-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:20px 18px;padding:14px 4px 28px}
+  .lib-tile{display:flex;flex-direction:column;cursor:pointer;min-width:0;
+    opacity:0;transform:translateY(24px) scale(.97);
+    animation:tileIn .58s cubic-bezier(.2,.78,.28,1) forwards}
+  @keyframes tileIn{to{opacity:1;transform:translateY(0) scale(1)}}
+  .lib-tile .tile-cover{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;
+    background:var(--surface);
+    box-shadow:0 6px 24px var(--shadow),inset 0 0 0 1px rgba(255,255,255,.07);
+    transition:transform .38s cubic-bezier(.2,.75,.25,1),box-shadow .38s,border-color .38s}
+  .lib-tile .tile-cover::before{content:'';position:absolute;inset:-30% -60%;z-index:2;
+    background:linear-gradient(105deg,transparent 36%,rgba(255,255,255,.16) 50%,transparent 64%);
+    transform:translateX(-55%) rotate(4deg);opacity:0;pointer-events:none;
+    transition:transform .7s ease,opacity .25s ease}
+  .lib-tile:hover .tile-cover,.lib-tile:active .tile-cover{
+    transform:translateY(-9px) scale(1.035);
+    box-shadow:0 22px 54px var(--accent-glow),0 10px 28px var(--shadow),inset 0 0 0 1px rgba(255,255,255,.16)}
+  .lib-tile:hover .tile-cover::before{transform:translateX(55%) rotate(4deg);opacity:1}
+  .lib-tile:focus-visible{outline:none}
+  .lib-tile:focus-visible .tile-cover{outline:2px solid var(--accent);outline-offset:3px}
   .lib-tile .tile-cover img{width:100%;height:100%;object-fit:cover;display:block}
   .lib-tile .cover-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.78);line-height:1.4}
-  .lib-tile .badge{position:absolute;top:8px;left:8px;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase}
-  .lib-tile .badge.epub{background:var(--epub);color:#fff}
-  .lib-tile .badge.pdf{background:var(--pdf);color:#fff}
-  .lib-tile .badge.pptx{background:var(--ppt);color:#000}
-  .lib-tile .pbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.18)}
-  .lib-tile .pbar>div{height:100%;background:var(--accent)}
-  .lib-tile .del{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);color:#ccc;border:none;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
-  .lib-tile:hover .del{opacity:1}
+  .lib-tile .badge{position:absolute;top:6px;left:6px;padding:2px 6px;border-radius:3px;font-size:8px;font-weight:700;text-transform:uppercase;backdrop-filter:blur(4px)}
+  .lib-tile .badge.epub{background:rgba(108,142,239,.85);color:#fff}
+  .lib-tile .badge.pdf{background:rgba(224,88,79,.85);color:#fff}
+  .lib-tile .badge.pptx{background:rgba(232,168,56,.85);color:#000}
+  .lib-tile .badge.docx{background:rgba(74,144,217,.85);color:#fff}
+  .lib-tile .pbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.15)}
+  .lib-tile .pbar>div{height:100%;background:var(--accent);box-shadow:0 0 6px var(--accent-glow)}
+  .lib-tile .del{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#ccc;border:none;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;backdrop-filter:blur(4px)}
+  .lib-tile:hover .del,.lib-tile:active .del{opacity:1}
   .lib-tile .del:hover{color:#ff6b6b}
-  /* 海报叠色（Folia：开启时给磁贴叠一层主题色） */
-  body.tint-on .lib-tile .tile-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(165deg,rgba(139,142,219,.12),rgba(8,8,15,.32));pointer-events:none}
-  .lib-tile .info{padding:8px 2px 0}
-  .lib-tile .info .title{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lib-tile .info .author{font-size:10px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--text3)}
-  .lib-empty .empty-icon{font-size:64px;margin-bottom:16px;opacity:.3}
-  .lib-empty p{font-size:15px}
-  .lib-empty .empty-hint{font-size:12px;margin-top:6px;color:var(--text3)}
+  /* 海报叠色 */
+  body.tint-on .lib-tile .tile-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(165deg,rgba(139,142,219,.10),rgba(8,8,15,.28));pointer-events:none}
+  .lib-tile .info{padding:7px 2px 0;transition:transform .32s ease}
+  .lib-tile:hover .info{transform:translateX(3px)}
+  .lib-tile .info .title{font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-tile .info .author{font-size:9px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 空状态 */
+  .lib-empty{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:calc(100dvh - 120px);padding:30px 20px 110px;color:var(--text3);overflow:hidden}
+  .lib-empty::before{content:'';position:absolute;width:min(62vw,520px);height:min(62vw,520px);
+    border-radius:50%;background:radial-gradient(circle,var(--accent-glow),transparent 68%);
+    filter:blur(18px);opacity:.64;pointer-events:none}
+  .lib-empty .empty-icon{position:relative;display:grid;place-items:center;width:108px;height:108px;
+    margin-bottom:22px;border:1px solid var(--control-border);border-radius:30px;
+    background:var(--control-bg);box-shadow:0 20px 60px var(--shadow),inset 0 1px rgba(255,255,255,.1);
+    font-size:44px;line-height:1;opacity:.86;transform:rotate(-3deg);
+    animation:emptyFloat 5s ease-in-out infinite}
+  @keyframes emptyFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(1deg)}}
+  .lib-empty .empty-eyebrow{position:relative;font-size:10px;font-weight:600;letter-spacing:.24em;
+    color:var(--accent);margin-bottom:10px}
+  .lib-empty .empty-title{position:relative;font-size:22px;font-weight:400;color:var(--heading);letter-spacing:.04em}
+  .lib-empty p{font-size:16px;color:var(--text2)}
+  .lib-empty .empty-hint{position:relative;font-size:13px;margin-top:10px;color:var(--text2);max-width:300px;text-align:center;line-height:1.75}
+  .lib-empty .empty-action{position:relative;margin-top:26px;
+    background:var(--surface);
+    background:color-mix(in srgb,var(--accent) 16%,var(--surface));
+    border:1px solid rgba(139,142,219,.26);
+    border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);
+    border-radius:24px;padding:11px 30px;color:var(--accent);font-size:14px;cursor:pointer;
+    box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 14%,transparent);
+    transition:background .25s,transform .25s,box-shadow .25s}
+  .lib-empty .empty-action:hover{background:color-mix(in srgb,var(--accent) 24%,var(--surface));
+    transform:translateY(-2px);box-shadow:0 14px 36px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .lib-empty .empty-formats{position:relative;margin-top:16px;font-size:9px;letter-spacing:.16em;color:var(--text3)}
 
   /* ===== 阅读器 ===== */
-  #readerView{position:fixed;inset:0;z-index:3;display:none}
-  #readerView.active{display:block}
+  #readerView{position:fixed;inset:0;z-index:3;background:transparent;
+    opacity:0;visibility:hidden;pointer-events:none;transform:scale(.985);
+    filter:blur(7px);will-change:opacity,transform,filter;
+    transition:opacity .42s ease,transform .48s cubic-bezier(.2,.8,.25,1),
+      filter .42s ease,visibility 0s linear .48s,background-color .4s ease}
+  #readerView.active{opacity:1;visibility:visible;pointer-events:auto;transform:none;
+    filter:none;transition-delay:0s}
   #epubViewer{position:absolute;inset:0;z-index:1}
   #pdfCanvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;max-width:94%;max-height:88%;box-shadow:0 8px 48px rgba(0,0,0,.5);border-radius:4px}
   #slideViewer{position:absolute;inset:0;z-index:1;overflow-y:auto;padding:40px 20px}
+  .pdf-text-card{
+    width:min(860px,96%);margin:0 auto 28px;padding:42px 54px;
+    border:1px solid var(--border);border-radius:8px;
+    background:color-mix(in srgb,var(--surface) 88%,transparent);
+    box-shadow:0 12px 46px rgba(0,0,0,.24);backdrop-filter:blur(18px);
+    user-select:text;
+  }
+  .pdf-text-kicker{
+    margin-bottom:24px;color:var(--text3);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;font-family:var(--sans);
+  }
+  .pdf-text-card p{
+    margin:0 0 .72em;color:var(--text);font-family:var(--reader-font,var(--serif));
+    text-align:justify;text-justify:inter-ideograph;
+  }
   .slide-card{
     background:var(--surface);border:1px solid var(--border);border-radius:8px;
     padding:40px 56px;max-width:760px;margin:0 auto 24px;min-height:420px;
     aspect-ratio:16/9;box-shadow:0 8px 40px rgba(0,0,0,.4);
+    font-family:var(--reader-font,var(--serif));
   }
   .slide-card h2{font-size:22px;color:#fff;margin-bottom:16px;font-weight:500}
-  .slide-card p{font-size:16px;color:#b8b8c4;line-height:1.8;margin-bottom:8px;font-family:var(--serif)}
+  .slide-card p{font-size:16px;color:#b8b8c4;line-height:1.8;margin-bottom:8px;font-family:var(--reader-font,var(--serif))}
 
   .reader-topbar,.reader-controls{position:fixed;left:0;right:0;z-index:10;transition:opacity .5s,transform .5s}
   .reader-topbar{
     top:0;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
-    background:linear-gradient(to bottom,rgba(8,8,15,.85),transparent);backdrop-filter:blur(10px);
+    background:linear-gradient(to bottom,var(--reader-chrome),transparent);backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    border-bottom:1px solid color-mix(in srgb,var(--border) 65%,transparent);
   }
   .reader-controls{
     bottom:0;padding:14px 24px 20px;
-    background:linear-gradient(to top,rgba(8,8,15,.9),transparent);backdrop-filter:blur(10px);
+    background:linear-gradient(to top,var(--reader-chrome),transparent);backdrop-filter:blur(16px);
+    border-top:1px solid var(--border);
+    border-top:1px solid color-mix(in srgb,var(--border) 65%,transparent);
   }
   .reader-topbar.hidden{opacity:0;transform:translateY(-20px);pointer-events:none}
   .reader-controls.hidden{opacity:0;transform:translateY(20px);pointer-events:none}
   .btn-back,.btn-toc{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:6px;transition:color .2s,background .2s}
-  .btn-back:hover,.btn-toc:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .btn-back:hover,.btn-toc:hover{color:var(--heading);background:var(--control-hover)}
   .reader-chapter{font-size:13px;color:var(--text2);text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 16px}
   .progress-row{display:flex;align-items:center;gap:14px;margin-bottom:12px}
   .progress-text{font-size:11px;color:var(--text2);font-family:"Consolas",monospace;min-width:38px}
@@ -111,22 +286,22 @@
   .control-row{display:flex;align-items:center;justify-content:center}
   .btn-nav{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
   .btn-nav:hover{background:rgba(139,142,219,.12)}
-  .font-controls{display:flex;gap:8px}
+  .font-controls{display:flex;gap:8px;align-items:center}
   .btn-font{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text2);font-size:13px;cursor:pointer;transition:color .2s,background .2s}
-  .btn-font:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .btn-font:hover{color:var(--heading);background:var(--control-hover)}
   .btn-font.hidden{display:none}
 
   /* ===== 目录面板 ===== */
   .toc-panel{
     position:fixed;top:0;right:0;bottom:0;width:280px;z-index:15;
-    background:var(--glass);backdrop-filter:blur(24px);border-left:1px solid var(--border);
+    background:var(--panel-bg);backdrop-filter:blur(24px);border-left:1px solid var(--border);
     transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);
     display:flex;flex-direction:column;
   }
   .toc-panel.open{transform:translateX(0)}
   .toc-header{padding:24px 20px 14px;font-size:14px;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
   .toc-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
-  .toc-close:hover{color:#fff}
+  .toc-close:hover{color:var(--heading)}
   .toc-list{flex:1;overflow-y:auto;padding:8px 0}
   .toc-list::-webkit-scrollbar{width:4px}
   .toc-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
@@ -161,10 +336,18 @@
     .lib-header{padding:16px 14px 12px}
     .lib-header h1{font-size:18px}
     .btn-import{padding:6px 14px;font-size:12px}
+    .lib-header-actions{gap:6px}
+    .btn-app-settings{padding:6px 11px;font-size:12px}
     .lib-section{padding:0 14px}
-    .lib-wall{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px}
-    .lib-tile .info .title{font-size:11px}
-    .lib-tile .info .author{font-size:9px}
+    .lib-wall{grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:12px}
+    .lib-tile .info .title{font-size:10px}
+    .lib-tile .info .author{font-size:8px}
+    .lib-empty{min-height:calc(100dvh - 92px);padding:24px 16px 90px}
+    .lib-empty::before{width:min(86vw,360px);height:min(86vw,360px)}
+    .lib-empty .empty-icon{width:90px;height:90px;border-radius:25px;font-size:37px;margin-bottom:18px}
+    .lib-empty .empty-title{font-size:19px}
+    .lib-empty .empty-hint{font-size:12px}
+    .lib-empty .empty-action{padding:10px 26px}
 
     .reader-topbar{padding:12px 16px}
     .reader-controls{padding:12px 16px 18px}
@@ -183,6 +366,43 @@
     .slide-card h2{font-size:18px}
     .slide-card p{font-size:14px;line-height:1.7}
     #slideViewer{padding:20px 12px}
+    /* 设置面板移动端适配 */
+    .settings-panel{padding:24px 12px;gap:14px}
+    .sp-row{gap:10px}
+    .sp-card{padding:10px 12px;min-height:44px;border-radius:12px}
+    .sp-bg-circles{gap:9px}
+    .sp-bg-circle{width:37px;height:37px}
+    .sp-fn-cur{font-size:17px}
+    .sp-font-btn{font-size:16px}
+    .sp-label{font-size:13px}
+    .sp-mode-btn{font-size:13px;padding:6px 2px}
+    .sp-close{top:12px;right:16px;font-size:24px}
+
+    .app-settings-panel{padding:10px;align-items:flex-end}
+    .app-settings-sheet{
+      width:100%;max-height:calc(100dvh - 20px);padding:20px 16px;
+      border-radius:22px;
+    }
+    .app-settings-head{margin-bottom:16px}
+    .app-settings-head h2{font-size:20px}
+    .app-settings-section{margin-top:18px}
+    .app-profile-card{padding:14px;gap:12px}
+    .app-avatar{width:48px;height:48px;border-radius:15px;font-size:19px}
+    .app-setting-row{padding:13px 14px;gap:12px}
+    .app-text-btn{padding:7px 10px}
+    .app-version-row,.app-version-status,.app-contact-card{padding-left:14px;padding-right:14px}
+  }
+  @media (max-width:360px){
+    .lib-wall{grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
+    .btn-import{padding:6px 10px}
+    .btn-app-settings{padding:6px 9px}
+    .boot-title-line,.boot-title-sheen{font-size:38px}
+    .settings-panel{padding:20px 10px;gap:11px}
+    .sp-row{gap:8px}
+    .sp-card{padding:9px 10px}
+    .sp-bg-circles{gap:6px}
+    .sp-bg-circle{width:32px;height:32px}
+    .sp-mode-btn{font-size:12px}
   }
 
   /* ===== 安全区域 ===== */
@@ -202,48 +422,598 @@
   }
   body.vignette-on #vignetteOverlay{opacity:1}
 
-  /* ===== 设置面板 ===== */
+  /* ===== 应用设置 ===== */
+  .app-settings-panel{
+    position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:color-mix(in srgb,var(--bg) 66%,transparent);
+    backdrop-filter:blur(16px);opacity:0;pointer-events:none;visibility:hidden;
+    transition:opacity .28s ease,visibility 0s linear .28s;
+  }
+  .app-settings-panel.show{opacity:1;pointer-events:auto;visibility:visible;transition-delay:0s}
+  .app-settings-sheet{
+    width:min(580px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;
+    border:1px solid var(--control-border);border-radius:24px;
+    background:var(--panel-bg);box-shadow:0 28px 90px var(--shadow);
+    padding:26px;
+    transform:translateY(14px) scale(.985);
+    transition:transform .32s cubic-bezier(.2,.8,.25,1);
+  }
+  .app-settings-panel.show .app-settings-sheet{transform:none}
+  .app-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}
+  .app-settings-head h2{font-size:22px;font-weight:500;color:var(--heading);letter-spacing:.02em}
+  .app-settings-head p{margin-top:5px;font-size:12px;color:var(--text3)}
+  .app-settings-close{
+    flex:none;width:34px;height:34px;border:none;border-radius:50%;
+    background:var(--control-bg);color:var(--text2);font-size:21px;cursor:pointer;
+  }
+  .app-settings-close:hover{color:var(--heading);background:var(--control-hover)}
+  .app-settings-section{margin-top:22px}
+  .app-settings-section:first-of-type{margin-top:0}
+  .app-settings-label{font-size:10px;font-weight:600;letter-spacing:.16em;
+    color:var(--text3);margin-bottom:9px;text-transform:uppercase}
+  .app-profile-card{
+    display:flex;align-items:center;gap:15px;padding:16px;
+    border:1px solid var(--control-border);border-radius:18px;background:var(--control-bg);
+  }
+  .app-avatar{
+    flex:none;width:54px;height:54px;border-radius:17px;display:grid;place-items:center;
+    color:#fff;font-size:21px;font-weight:500;
+    background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 48%,#e5a9c8));
+    box-shadow:0 9px 24px color-mix(in srgb,var(--accent) 24%,transparent);
+  }
+  .app-profile-main{flex:1;min-width:0}
+  .app-profile-name{
+    width:100%;padding:0;border:0;outline:0;background:transparent;
+    color:var(--heading);font:inherit;font-size:17px;font-weight:500;
+  }
+  .app-profile-meta{margin-top:5px;color:var(--text3);font-size:11px}
+  .app-profile-stats{display:flex;gap:14px;margin-top:9px;color:var(--text2);font-size:11px}
+  .app-profile-stats b{color:var(--text);font-weight:500}
+  .app-settings-list{
+    overflow:hidden;border:1px solid var(--control-border);border-radius:18px;
+    background:var(--control-bg);
+  }
+  .app-setting-row{
+    display:flex;align-items:center;justify-content:space-between;gap:20px;
+    padding:14px 16px;border-bottom:1px solid var(--control-border);
+  }
+  .app-setting-row:last-child{border-bottom:none}
+  .app-setting-copy{min-width:0}
+  .app-setting-title{font-size:14px;color:var(--text);line-height:1.4}
+  .app-setting-desc{margin-top:3px;font-size:11px;color:var(--text3);line-height:1.5}
+  .app-switch{position:relative;flex:none;width:44px;height:26px;cursor:pointer}
+  .app-switch input{position:absolute;opacity:0;width:1px;height:1px}
+  .app-switch-track{
+    position:absolute;inset:0;border-radius:13px;background:var(--control-hover);
+    transition:background .22s ease;
+  }
+  .app-switch-track::after{
+    content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;
+    border-radius:50%;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.25);
+    transition:transform .22s ease;
+  }
+  .app-switch input:checked + .app-switch-track{background:var(--accent)}
+  .app-switch input:checked + .app-switch-track::after{transform:translateX(18px)}
+  .app-switch input:focus-visible + .app-switch-track{outline:2px solid var(--accent);outline-offset:2px}
+  .app-text-btn{
+    flex:none;border:1px solid var(--control-border);border-radius:999px;
+    background:var(--control-bg);color:var(--text2);font:inherit;font-size:11px;
+    padding:7px 12px;cursor:pointer;transition:background .2s,color .2s;
+  }
+  .app-text-btn:hover{background:var(--control-hover);color:var(--heading)}
+  .app-version-row{display:flex;align-items:center;gap:12px;padding:15px 16px;
+    border-bottom:1px solid var(--control-border)}
+  .app-version-mark{
+    flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+    color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
+    font-family:Georgia,serif;font-size:16px;
+  }
+  .app-version-info{flex:1;min-width:0}
+  .app-version-name{font-size:13px;color:var(--text)}
+  .app-version-note{margin-top:3px;font-size:10px;color:var(--text3)}
+  .app-version-status{padding:11px 16px;border-bottom:1px solid var(--control-border);
+    color:var(--text3);font-size:11px;min-height:37px}
+  .app-contact-card{display:flex;align-items:center;gap:13px;padding:15px 16px;
+    border:1px solid var(--control-border);border-radius:18px;background:var(--control-bg)}
+  .app-contact-icon{
+    flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+    color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
+  }
+  .app-contact-main{flex:1;min-width:0}
+  .app-contact-label{font-size:13px;color:var(--text)}
+  .app-contact-mail{display:inline-block;margin-top:4px;color:var(--accent);
+    font-size:11px;text-decoration:none;overflow-wrap:anywhere}
+  .app-contact-mail:hover{text-decoration:underline}
+
+  /* ===== 设置面板 — 截图同款全屏面板 ===== */
   .settings-panel{
-    position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(20px);
-    z-index:12;width:340px;max-width:90vw;
-    background:var(--glass);backdrop-filter:blur(20px);
-    border:1px solid var(--border);border-radius:12px;
-    padding:16px 20px;opacity:0;pointer-events:none;
-    transition:opacity .3s,transform .3s;
+    position:fixed;inset:0;z-index:12;
+    background:var(--panel-bg);backdrop-filter:blur(28px) saturate(1.12);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    gap:20px;padding:40px 24px;
+    opacity:0;pointer-events:none;transition:opacity .3s ease,background-color .4s ease;
   }
-  .settings-panel.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-  .settings-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  .settings-row:last-child{margin-bottom:0}
-  .settings-row label{font-size:13px;color:var(--text2);min-width:56px}
-  .settings-row input[type=range]{flex:1;accent-color:var(--accent)}
-  .theme-btn{
-    width:36px;height:36px;border-radius:50%;border:2px solid transparent;
-    cursor:pointer;transition:border-color .2s,transform .15s;
+  .settings-panel.show{opacity:1;pointer-events:auto}
+  .sp-row{display:flex;align-items:center;gap:16px;width:100%;max-width:520px}
+  .sp-card{
+    flex:1;min-width:0;background:var(--control-bg);border:1px solid var(--control-border);
+    border-radius:16px;box-shadow:inset 0 1px rgba(255,255,255,.04);
+    padding:14px 18px;display:flex;align-items:center;gap:12px;
+    min-height:52px;
+    transition:background-color .35s ease,border-color .35s ease,box-shadow .35s ease;
   }
-  .theme-btn:active{transform:scale(.9)}
-  .theme-btn.active{border-color:var(--accent)}
-  .theme-dark{background:linear-gradient(135deg,#08080f,#1a1a2e)}
-  .theme-light{background:linear-gradient(135deg,#f5f5f0,#e0e0d8)}
-  .theme-sepia{background:linear-gradient(135deg,#f4ecd8,#d4c8a8)}
-  .theme-night{background:#000}
-  .toggle-btn{
-    flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);
-    border-radius:8px;padding:7px 0;color:var(--text2);font-size:13px;
-    cursor:pointer;transition:background .2s,color .2s,border-color .2s;
+  .sp-card-wide{flex:2}
+  /* 亮度滑块 */
+  .sp-brightness{flex:1;accent-color:var(--accent);height:4px}
+  .sp-icon{font-size:18px;color:var(--text2);flex-shrink:0}
+  /* 护眼开关 */
+  .sp-toggle{
+    width:44px;height:26px;border-radius:13px;background:var(--control-hover);
+    position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;
   }
-  .toggle-btn.on{background:rgba(139,142,219,.18);border-color:rgba(139,142,219,.45);color:#fff}
-  .toggle-btn:hover{background:rgba(255,255,255,.09)}
+  .sp-toggle.on{background:var(--accent)}
+  .sp-toggle::after{
+    content:'';position:absolute;width:20px;height:20px;border-radius:50%;
+    background:#fff;top:3px;left:3px;transition:transform .25s;
+  }
+  .sp-toggle.on::after{transform:translateX(18px)}
+  .sp-label{font-size:14px;color:var(--text2);white-space:nowrap}
+  /* 字号行 */
+  .sp-font-btn{
+    background:none;border:none;color:var(--text);font-size:18px;font-weight:600;
+    cursor:pointer;padding:4px 8px;transition:color .2s;
+  }
+  .sp-font-btn:hover{color:var(--accent)}
+  .sp-font-nums{display:flex;align-items:baseline;gap:8px;flex:1;justify-content:center}
+  .sp-fn-prev,.sp-fn-next{font-size:13px;color:var(--text3);font-family:"Consolas",monospace}
+  .sp-fn-cur{font-size:20px;color:var(--text);font-weight:700;font-family:"Consolas",monospace}
+  .sp-arrow-btn{
+    background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;gap:4px;padding:4px 0;white-space:nowrap;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .sp-arrow-btn:hover{color:var(--text)}
+  .sp-arrow-btn:disabled{opacity:.5;cursor:default}
+  .sp-arrow-btn:disabled:hover{color:var(--text2)}
+  .sp-arrow-btn .arrow{font-size:12px}
+  /* 背景色圆 */
+  .sp-bg-circles{display:flex;gap:14px;flex:1;justify-content:center}
+  .sp-bg-circle{
+    width:48px;height:48px;border-radius:50%;cursor:pointer;
+    border:3px solid transparent;transition:border-color .2s,transform .15s;
+    overflow:hidden;
+  }
+  .sp-bg-circle:active{transform:scale(.9)}
+  .sp-bg-circle.active{border-color:var(--accent)}
+  .sp-bg-circle img{width:100%;height:100%;object-fit:cover;display:block}
+  /* 翻页模式 */
+  .sp-modes{display:flex;gap:0;flex:1}
+  .sp-mode-btn{
+    flex:1;background:none;border:none;color:var(--text3);font-size:14px;
+    cursor:pointer;padding:8px 4px;transition:color .2s;text-align:center;
+  }
+  .sp-mode-btn.active{color:var(--text);font-weight:600}
+  .sp-mode-btn:hover{color:var(--text2)}
+  .sp-mode-btn:disabled,.sp-arrow-btn:disabled{opacity:.45;cursor:default}
+  /* 关闭按钮 */
+  .sp-close{
+    position:absolute;top:20px;right:24px;background:none;border:none;
+    color:var(--text2);font-size:28px;cursor:pointer;line-height:1;
+  }
+  .sp-close:hover{color:var(--heading)}
 
   /* 风格：亮色 */
-  body.theme-light{--bg:#f5f5f0;--surface:#fff;--text:#333;--text2:#888;--text3:#bbb;--border:rgba(0,0,0,.08);--glass:rgba(255,255,255,.72)}
-  body.theme-light #bgCanvas{opacity:.15}
-  body.theme-sepia{--bg:#f4ecd8;--surface:#ede0c8;--text:#5b4636;--text2:#8a7a60;--text3:#bbb;--border:rgba(91,70,54,.12);--glass:rgba(244,236,216,.8)}
-  body.theme-sepia #bgCanvas{opacity:.12}
-  body.theme-night{--bg:#000;--surface:#0a0a0a;--text:#555;--text2:#444;--text3:#333;--border:rgba(255,255,255,.03);--glass:rgba(0,0,0,.8)}
-  body.theme-night #bgCanvas{opacity:.05}
+  body.theme-light{
+    --bg:#f3f3ed; --surface:#fff; --glass:rgba(255,255,255,.8);
+    --text:#303037; --text2:#6f6f79; --text3:#aaaab2;
+    --accent:#696ed0; --accent-glow:rgba(105,110,208,.22);
+    --border:rgba(28,28,38,.09); --heading:#202027;
+    --control-bg:rgba(255,255,255,.62); --control-border:rgba(28,28,38,.08);
+    --control-hover:rgba(28,28,38,.06); --reader-chrome:rgba(248,248,244,.88);
+    --panel-bg:rgba(247,247,242,.9); --shadow:rgba(42,40,58,.16);
+    --canvas-opacity:.16;
+  }
+  body.theme-sepia{
+    --bg:#f4ecd8; --surface:#ede0c8; --glass:rgba(244,236,216,.82);
+    --text:#5b4636; --text2:#816f58; --text3:#ae9e86;
+    --accent:#957150; --accent-glow:rgba(149,113,80,.24);
+    --border:rgba(91,70,54,.13); --heading:#443125;
+    --control-bg:rgba(255,250,238,.54); --control-border:rgba(91,70,54,.1);
+    --control-hover:rgba(91,70,54,.07); --reader-chrome:rgba(244,236,216,.9);
+    --panel-bg:rgba(241,232,211,.92); --shadow:rgba(64,43,25,.18);
+    --canvas-opacity:.14;
+  }
+  body.theme-night{
+    --bg:#000; --surface:#080808; --glass:rgba(0,0,0,.84);
+    --text:#858585; --text2:#656565; --text3:#4d4d4d;
+    --accent:#777bc7; --accent-glow:rgba(119,123,199,.18);
+    --border:rgba(255,255,255,.045); --heading:#a4a4a4;
+    --control-bg:rgba(255,255,255,.035); --control-border:rgba(255,255,255,.04);
+    --control-hover:rgba(255,255,255,.055); --reader-chrome:rgba(0,0,0,.9);
+    --panel-bg:rgba(0,0,0,.92); --shadow:rgba(0,0,0,.7);
+    --canvas-opacity:.055;
+  }
+  body.reader-open #bgCanvas{opacity:.94;filter:saturate(1.08)}
+  body.reader-open.theme-light #bgCanvas{opacity:.42}
+  body.reader-open.theme-sepia #bgCanvas{opacity:.34}
+  body.reader-open.theme-night #bgCanvas{opacity:.08}
+
+  #slideViewer.page-turn-overlay-next,#epubViewer.page-turn-overlay-next{
+    animation:readerOverlayNext .34s cubic-bezier(.2,.78,.28,1)
+  }
+  #slideViewer.page-turn-overlay-prev,#epubViewer.page-turn-overlay-prev{
+    animation:readerOverlayPrev .34s cubic-bezier(.2,.78,.28,1)
+  }
+  #slideViewer.page-turn-simulation-next,#epubViewer.page-turn-simulation-next{
+    animation:readerSimulationNext .46s cubic-bezier(.2,.75,.25,1)
+  }
+  #slideViewer.page-turn-simulation-prev,#epubViewer.page-turn-simulation-prev{
+    animation:readerSimulationPrev .46s cubic-bezier(.2,.75,.25,1)
+  }
+  #slideViewer.page-turn-vertical-next,#epubViewer.page-turn-vertical-next{
+    animation:readerVerticalNext .38s cubic-bezier(.2,.78,.28,1)
+  }
+  #slideViewer.page-turn-vertical-prev,#epubViewer.page-turn-vertical-prev{
+    animation:readerVerticalPrev .38s cubic-bezier(.2,.78,.28,1)
+  }
+  #pdfCanvas.page-turn-overlay-next{animation:pdfOverlayNext .34s cubic-bezier(.2,.78,.28,1)}
+  #pdfCanvas.page-turn-overlay-prev{animation:pdfOverlayPrev .34s cubic-bezier(.2,.78,.28,1)}
+  #pdfCanvas.page-turn-simulation-next{animation:pdfSimulationNext .46s cubic-bezier(.2,.75,.25,1)}
+  #pdfCanvas.page-turn-simulation-prev{animation:pdfSimulationPrev .46s cubic-bezier(.2,.75,.25,1)}
+  #pdfCanvas.page-turn-vertical-next{animation:pdfVerticalNext .38s cubic-bezier(.2,.78,.28,1)}
+  #pdfCanvas.page-turn-vertical-prev{animation:pdfVerticalPrev .38s cubic-bezier(.2,.78,.28,1)}
+  @keyframes readerOverlayNext{from{opacity:.3;transform:translateX(26px) scale(.994)}to{opacity:1;transform:none}}
+  @keyframes readerOverlayPrev{from{opacity:.3;transform:translateX(-26px) scale(.994)}to{opacity:1;transform:none}}
+  @keyframes readerSimulationNext{0%{opacity:.25;transform:perspective(1100px) rotateY(-4deg) translateX(30px)}
+    60%{opacity:1}100%{opacity:1;transform:none}}
+  @keyframes readerSimulationPrev{0%{opacity:.25;transform:perspective(1100px) rotateY(4deg) translateX(-30px)}
+    60%{opacity:1}100%{opacity:1;transform:none}}
+  @keyframes readerVerticalNext{from{opacity:.35;transform:translateY(28px)}to{opacity:1;transform:none}}
+  @keyframes readerVerticalPrev{from{opacity:.35;transform:translateY(-28px)}to{opacity:1;transform:none}}
+  @keyframes pdfOverlayNext{from{opacity:.3;translate:26px 0}to{opacity:1;translate:0 0}}
+  @keyframes pdfOverlayPrev{from{opacity:.3;translate:-26px 0}to{opacity:1;translate:0 0}}
+  @keyframes pdfSimulationNext{from{opacity:.25;translate:30px 0;scale:.99}to{opacity:1;translate:0 0;scale:1}}
+  @keyframes pdfSimulationPrev{from{opacity:.25;translate:-30px 0;scale:.99}to{opacity:1;translate:0 0;scale:1}}
+  @keyframes pdfVerticalNext{from{opacity:.35;translate:0 28px}to{opacity:1;translate:0 0}}
+  @keyframes pdfVerticalPrev{from{opacity:.35;translate:0 -28px}to{opacity:1;translate:0 0}}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+      scroll-behavior:auto !important;transition-duration:.01ms !important}
+  }
+
+  /* ===== 书架 — Folia 封面拼贴 ===== */
+  body:not(.reader-open) #bgCanvas{opacity:.94;filter:saturate(1.08)}
+  #libraryView .lib-header{
+    padding:22px 28px 16px;
+    background:linear-gradient(to bottom,rgba(4,5,11,.9) 0%,rgba(4,5,11,.56) 64%,transparent 100%);
+    backdrop-filter:blur(22px) saturate(1.16);
+  }
+  #libraryView .lib-header h1{
+    color:#f4f4fa;font-size:23px;font-weight:300;letter-spacing:.08em;
+    text-shadow:0 0 30px rgba(139,142,219,.12);
+  }
+  #libraryView .lib-header h1 span{color:#a8acff}
+  #libraryView .lib-header .btn-import{
+    border-color:rgba(160,165,255,.18);background:rgba(91,96,183,.15);
+    color:#dadcff;backdrop-filter:blur(10px);
+  }
+  #libraryView .lib-header .btn-import:hover{
+    border-color:rgba(174,179,255,.28);background:rgba(104,110,207,.24);color:#fff;
+  }
+  #libraryView .lib-header .btn-app-settings{
+    border-color:rgba(255,255,255,.09);background:rgba(255,255,255,.05);
+    color:rgba(240,241,255,.68);backdrop-filter:blur(10px);
+  }
+  #libraryView .lib-header .btn-app-settings:hover{
+    border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.09);color:#fff;
+  }
+  #libraryView .lib-section{padding:0}
+  #libraryView .lib-wall{
+    display:grid;grid-template-columns:repeat(16,minmax(0,1fr));
+    grid-auto-rows:clamp(32px,3.45vw,58px);grid-auto-flow:dense;
+    gap:4px;padding:7px 18px 38px;align-items:stretch;
+  }
+  #libraryView .lib-tile{
+    position:relative;display:block;min-width:0;min-height:0;overflow:hidden;
+    border-radius:4px;background:#0c0e18;cursor:pointer;isolation:isolate;
+    box-shadow:0 0 0 1px rgba(255,255,255,.035);
+    opacity:0;transform:translateY(14px) scale(.975);
+    animation:folioTileIn .56s cubic-bezier(.2,.78,.28,1) forwards;
+    transition:transform .34s cubic-bezier(.2,.75,.25,1),
+      box-shadow .34s ease,border-radius .34s ease;
+  }
+  #libraryView .lib-tile.tile-s1{grid-column:span 2;grid-row:span 6}
+  #libraryView .lib-tile.tile-s2{grid-column:span 3;grid-row:span 5}
+  #libraryView .lib-tile.tile-s3{grid-column:span 2;grid-row:span 7}
+  #libraryView .lib-tile.tile-s4{grid-column:span 3;grid-row:span 6}
+  #libraryView .lib-tile.tile-s5{grid-column:span 4;grid-row:span 5}
+  #libraryView .lib-tile.featured{
+    grid-column:6 / span 6;grid-row:1 / span 14;z-index:1;
+  }
+  #libraryView .lib-tile:hover,#libraryView .lib-tile:active{
+    z-index:4;transform:scale(1.014);
+    box-shadow:0 18px 44px rgba(0,0,0,.5),0 0 0 1px rgba(190,195,255,.2);
+    border-radius:6px;
+  }
+  #libraryView .lib-tile:focus-visible{
+    outline:2px solid #aeb2ff;outline-offset:-2px;
+  }
+  #libraryView .lib-tile .tile-cover{
+    position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;
+    border-radius:inherit;background:#0c0e18;box-shadow:none;
+    transition:transform .42s cubic-bezier(.2,.75,.25,1),filter .35s ease;
+  }
+  #libraryView .lib-tile:hover .tile-cover{
+    transform:scale(1.035);filter:saturate(1.08) brightness(1.04);
+  }
+  #libraryView .lib-tile .tile-cover img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    transform:scale(1.002);
+  }
+  #libraryView .lib-tile .cover-ph{
+    padding:16%;font-size:clamp(12px,1.2vw,18px);font-weight:500;
+    color:rgba(255,255,255,.86);text-shadow:0 2px 16px rgba(0,0,0,.5);
+  }
+  #libraryView .lib-tile .tile-shade{
+    position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:
+      linear-gradient(to bottom,rgba(2,3,8,.2),transparent 28%),
+      linear-gradient(to top,rgba(2,3,8,.93) 0%,rgba(2,3,8,.65) 22%,rgba(2,3,8,.12) 58%,transparent 76%);
+  }
+  #libraryView .lib-tile .tile-meta{
+    position:absolute;left:10px;right:10px;bottom:9px;z-index:3;
+    min-width:0;pointer-events:none;
+  }
+  #libraryView .lib-tile .tile-status{
+    display:inline-block;margin-bottom:5px;padding:2px 6px;border-radius:3px;
+    background:rgba(0,0,0,.34);color:rgba(240,241,255,.72);
+    font-size:8px;font-weight:600;letter-spacing:.08em;backdrop-filter:blur(5px);
+  }
+  #libraryView .lib-tile .tile-title{
+    display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    color:#fff;font-size:clamp(12px,1.05vw,16px);font-weight:500;line-height:1.28;
+    letter-spacing:.01em;text-shadow:0 1px 10px rgba(0,0,0,.75);
+  }
+  #libraryView .lib-tile .tile-author{
+    margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+    color:rgba(247,247,255,.58);font-size:10px;line-height:1.3;
+  }
+  #libraryView .lib-tile.featured .tile-meta{left:24px;right:86px;bottom:23px}
+  #libraryView .lib-tile.featured .tile-status{
+    margin-bottom:9px;padding:4px 9px;font-size:9px;background:rgba(0,0,0,.4);
+  }
+  #libraryView .lib-tile.featured .tile-title{
+    max-width:78%;font-size:clamp(30px,3.2vw,48px);line-height:1.08;
+    font-weight:500;letter-spacing:.015em;-webkit-line-clamp:3;
+  }
+  #libraryView .lib-tile.featured .tile-author{margin-top:9px;font-size:13px;color:rgba(247,247,255,.66)}
+  #libraryView .lib-tile .badge{
+    top:8px;left:8px;z-index:3;padding:3px 6px;border-radius:3px;
+    background:rgba(0,0,0,.42);color:rgba(255,255,255,.86);
+    font-size:7px;font-weight:700;letter-spacing:.08em;backdrop-filter:blur(6px);
+  }
+  #libraryView .lib-tile .tile-order{
+    position:absolute;top:9px;right:38px;z-index:3;color:rgba(255,255,255,.58);
+    font-size:9px;font-variant-numeric:tabular-nums;
+  }
+  #libraryView .lib-tile .del{
+    top:7px;right:7px;z-index:4;width:23px;height:23px;background:rgba(0,0,0,.42);
+    opacity:0;color:rgba(255,255,255,.72);
+  }
+  #libraryView .lib-tile:hover .del,#libraryView .lib-tile:active .del{opacity:1}
+  #libraryView .lib-tile .pbar{
+    position:absolute;left:0;right:0;bottom:0;height:2px;z-index:4;
+    background:rgba(255,255,255,.14);
+  }
+  #libraryView .lib-tile .pbar>div{
+    height:100%;background:linear-gradient(90deg,#7f84db,#d4d7ff);
+    box-shadow:0 0 9px rgba(139,142,219,.65);
+  }
+  #libraryView .lib-tile .tile-resume{
+    position:absolute;right:22px;bottom:22px;z-index:4;display:grid;place-items:center;
+    width:48px;height:48px;border:1px solid rgba(255,255,255,.2);
+    border-radius:50%;background:rgba(8,9,16,.42);color:#fff;
+    font-size:18px;backdrop-filter:blur(12px);
+    box-shadow:0 10px 28px rgba(0,0,0,.28);
+    transition:background .2s,transform .25s;
+  }
+  #libraryView .lib-tile.featured:hover .tile-resume{
+    background:rgba(110,115,218,.46);transform:scale(1.06);
+  }
+  #libraryView .lib-tile .tile-cover::before{
+    content:'';position:absolute;inset:-20%;z-index:2;pointer-events:none;
+    background:linear-gradient(108deg,transparent 38%,rgba(255,255,255,.13) 50%,transparent 62%);
+    transform:translateX(-60%);opacity:0;transition:transform .8s ease,opacity .25s;
+  }
+  #libraryView .lib-tile:hover .tile-cover::before{transform:translateX(56%);opacity:1}
+  #libraryView .lib-empty{color:var(--shelf-muted)}
+  #libraryView .lib-empty::before{background:radial-gradient(circle,rgba(108,115,223,.2),transparent 68%)}
+  #libraryView .lib-empty .empty-icon{
+    border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.055);
+    box-shadow:0 22px 70px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.08);
+  }
+  #libraryView .lib-empty .empty-title{color:#f4f4fa}
+  #libraryView .lib-empty .empty-hint{color:rgba(232,234,255,.56)}
+  #libraryView .lib-empty .empty-formats{color:rgba(232,234,255,.3)}
+  #libraryView .lib-empty .empty-action{
+    border-color:rgba(164,169,255,.25);background:rgba(83,89,176,.2);
+    color:#dcdfff;box-shadow:0 12px 34px rgba(60,66,154,.2);
+  }
+  #libraryView .lib-empty .empty-action:hover{
+    background:rgba(102,109,212,.3);box-shadow:0 16px 40px rgba(78,85,188,.28);
+  }
+  #libraryView::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13)}
+
+  @keyframes folioTileIn{to{opacity:1;transform:translateY(0) scale(1)}}
+
+  @media (max-width:1100px){
+    #libraryView .lib-wall{grid-template-columns:repeat(12,minmax(0,1fr))}
+    #libraryView .lib-tile.featured{grid-column:4 / span 6;grid-row:1 / span 13}
+    #libraryView .lib-tile.tile-s5{grid-column:span 4;grid-row:span 5}
+  }
+
+  @media (max-width:768px){
+    #libraryView .lib-header{padding:16px 14px 12px}
+    #libraryView .lib-header h1{font-size:19px}
+    #libraryView .lib-wall{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      grid-auto-rows:30px;gap:3px;padding:5px 8px 28px;
+    }
+    #libraryView .lib-tile.tile-s1,
+    #libraryView .lib-tile.tile-s2,
+    #libraryView .lib-tile.tile-s3,
+    #libraryView .lib-tile.tile-s4,
+    #libraryView .lib-tile.tile-s5{grid-column:span 2;grid-row:span 5}
+    #libraryView .lib-tile.tile-s2,
+    #libraryView .lib-tile.tile-s4{grid-column:span 3}
+    #libraryView .lib-tile.featured{
+      grid-column:1 / -1;grid-row:span 10;margin-bottom:1px;
+    }
+    #libraryView .lib-tile .tile-meta{left:9px;right:9px;bottom:8px}
+    #libraryView .lib-tile .tile-title{font-size:12px}
+    #libraryView .lib-tile .tile-author{font-size:9px}
+    #libraryView .lib-tile.featured .tile-meta{left:18px;right:68px;bottom:17px}
+    #libraryView .lib-tile.featured .tile-title{font-size:clamp(25px,8.5vw,36px)}
+    #libraryView .lib-tile.featured .tile-author{font-size:11px}
+    #libraryView .lib-tile .tile-resume{
+      right:16px;bottom:16px;width:40px;height:40px;font-size:15px;
+    }
+  }
+
+  @media (max-width:360px){
+    #libraryView .lib-wall{grid-auto-rows:27px;gap:2px;padding-left:6px;padding-right:6px}
+    #libraryView .lib-tile .tile-status{display:none}
+    #libraryView .lib-tile.featured .tile-status{display:inline-block}
+    #libraryView .lib-tile .tile-title{font-size:11px}
+  }
+
+  /* 少量书籍：用主封面和导入卡片铺满书架 */
+  #libraryView .lib-tile .tile-order{right:66px}
+  #libraryView .lib-tile.featured .tile-order{right:38px}
+  #libraryView .lib-tile .set-featured{
+    position:absolute;top:7px;right:37px;z-index:4;width:23px;height:23px;
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,.1);
+    border-radius:50%;background:rgba(0,0,0,.42);color:rgba(255,255,255,.78);
+    font-size:12px;line-height:1;cursor:pointer;opacity:0;
+    backdrop-filter:blur(7px);transition:opacity .2s,background .2s;
+  }
+  #libraryView .lib-tile:hover .set-featured,
+  #libraryView .lib-tile:focus-within .set-featured{opacity:1}
+  #libraryView .lib-tile .set-featured:hover{background:rgba(105,110,205,.55);color:#fff}
+  #libraryView .lib-add-tile{
+    position:relative;display:flex;flex-direction:column;justify-content:space-between;
+    grid-column:span 3;grid-row:span 6;min-width:0;min-height:0;overflow:hidden;
+    padding:24px;border:1px dashed rgba(176,181,255,.16);border-radius:4px;
+    background:
+      radial-gradient(circle at 78% 22%,rgba(127,132,222,.22),transparent 34%),
+      linear-gradient(145deg,rgba(24,27,49,.9),rgba(8,10,18,.95));
+    color:rgba(245,245,255,.75);font:inherit;text-align:left;cursor:pointer;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+    transition:border-color .25s,transform .3s,background .3s;
+  }
+  #libraryView .lib-add-tile:hover{
+    border-color:rgba(190,194,255,.32);transform:scale(1.012);
+    background:
+      radial-gradient(circle at 78% 22%,rgba(127,132,222,.3),transparent 38%),
+      linear-gradient(145deg,rgba(28,32,58,.94),rgba(8,10,18,.97));
+  }
+  #libraryView .lib-add-tile:focus-visible{outline:2px solid #aeb2ff;outline-offset:-2px}
+  #libraryView .lib-add-glow{
+    position:absolute;right:-20%;bottom:-40%;width:75%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle,rgba(100,106,218,.24),transparent 70%);filter:blur(16px);
+  }
+  #libraryView .lib-add-plus{
+    position:relative;display:grid;place-items:center;width:42px;height:42px;
+    border:1px solid rgba(255,255,255,.13);border-radius:50%;
+    background:rgba(255,255,255,.055);color:#d9dcff;font-size:23px;
+  }
+  #libraryView .lib-add-copy{position:relative;display:flex;flex-direction:column;gap:6px}
+  #libraryView .lib-add-copy strong{font-size:15px;font-weight:500;color:#f0f1ff}
+  #libraryView .lib-add-copy small{font-size:10px;letter-spacing:.04em;color:rgba(235,237,255,.48)}
+
+  @media (min-width:769px){
+    #libraryView .lib-wall.sparse{
+      height:calc(100dvh - 85px);min-height:540px;
+      grid-template-columns:repeat(16,minmax(0,1fr));
+      grid-template-rows:repeat(14,minmax(0,1fr));
+      grid-auto-rows:minmax(0,1fr);padding-bottom:12px;
+    }
+    #libraryView .lib-wall.sparse .lib-tile,
+    #libraryView .lib-wall.sparse .lib-add-tile{grid-column:auto;grid-row:auto}
+    #libraryView .lib-wall.sparse.count-1 .featured{grid-column:3 / span 10;grid-row:1 / span 9}
+    #libraryView .lib-wall.sparse.count-1 .lib-add-tile{grid-column:5 / span 6;grid-row:10 / span 5}
+    #libraryView .lib-wall.sparse.count-2 .featured{grid-column:2 / span 8;grid-row:1 / -1}
+    #libraryView .lib-wall.sparse.count-2 .slot-1{grid-column:10 / span 6;grid-row:1 / span 8}
+    #libraryView .lib-wall.sparse.count-2 .lib-add-tile{grid-column:10 / span 6;grid-row:9 / span 6}
+    #libraryView .lib-wall.sparse.count-3 .featured{grid-column:5 / span 8;grid-row:1 / -1}
+    #libraryView .lib-wall.sparse.count-3 .slot-1{grid-column:1 / span 4;grid-row:1 / span 7}
+    #libraryView .lib-wall.sparse.count-3 .slot-2{grid-column:1 / span 4;grid-row:8 / span 7}
+    #libraryView .lib-wall.sparse.count-3 .lib-add-tile{grid-column:13 / span 4;grid-row:1 / -1}
+    #libraryView .lib-wall.sparse.count-4 .featured{grid-column:5 / span 8;grid-row:1 / -1}
+    #libraryView .lib-wall.sparse.count-4 .slot-1{grid-column:1 / span 4;grid-row:1 / span 7}
+    #libraryView .lib-wall.sparse.count-4 .slot-2{grid-column:1 / span 4;grid-row:8 / span 7}
+    #libraryView .lib-wall.sparse.count-4 .slot-3{grid-column:13 / span 4;grid-row:1 / span 7}
+    #libraryView .lib-wall.sparse.count-4 .lib-add-tile{grid-column:13 / span 4;grid-row:8 / span 7}
+  }
+
+  @media (hover:none){
+    #libraryView .lib-tile .set-featured{opacity:.8}
+  }
+
+  @media (max-width:768px){
+    #libraryView .lib-wall.sparse{
+      height:auto;min-height:0;grid-template-columns:repeat(6,minmax(0,1fr));
+      grid-template-rows:none;grid-auto-rows:30px;padding-bottom:28px;
+    }
+    #libraryView .lib-wall.sparse.count-1 .featured,
+    #libraryView .lib-wall.sparse.count-2 .featured,
+    #libraryView .lib-wall.sparse.count-3 .featured,
+    #libraryView .lib-wall.sparse.count-4 .featured{
+      grid-column:1 / -1;grid-row:1 / span 10;
+    }
+    #libraryView .lib-wall.sparse .slot-1,
+    #libraryView .lib-wall.sparse .slot-2,
+    #libraryView .lib-wall.sparse .slot-3{
+      grid-column:span 2;grid-row:span 5;
+    }
+    #libraryView .lib-wall.sparse .lib-add-tile{
+      grid-column:1 / -1;grid-row:span 5;padding:18px;
+    }
+    #libraryView .lib-add-plus{width:36px;height:36px;font-size:20px}
+    #libraryView .lib-add-copy strong{font-size:14px}
+  }
 </style>
 </head>
 <body>
+
+<div id="bootOverlay" class="is-playing" aria-label="Echo Books 正在启动">
+  <div class="boot-glow g1"></div>
+  <div class="boot-glow g2"></div>
+  <div class="boot-glow g3"></div>
+  <div class="boot-grain"></div>
+  <div class="boot-rays"></div>
+  <span class="boot-core"></span>
+  <span class="boot-orbit a"></span>
+  <span class="boot-orbit b"></span>
+  <span class="boot-streak"></span>
+  <div class="boot-title">
+    <div class="boot-title-line">
+      <span class="boot-letter" style="--i:0">E</span>
+      <span class="boot-letter" style="--i:1">c</span>
+      <span class="boot-letter" style="--i:2">h</span>
+      <span class="boot-letter" style="--i:3">o</span>
+      <span class="boot-letter space" style="--i:4"> </span>
+      <span class="boot-letter" style="--i:5">B</span>
+      <span class="boot-letter" style="--i:6">o</span>
+      <span class="boot-letter" style="--i:7">o</span>
+      <span class="boot-letter" style="--i:8">k</span>
+      <span class="boot-letter" style="--i:9">s</span>
+    </div>
+    <div class="boot-title-sheen">Echo Books</div>
+  </div>
+  <span class="boot-underline"></span>
+</div>
 
 <canvas id="bgCanvas"></canvas>
 <div id="brightnessOverlay"></div>
@@ -253,14 +1023,98 @@
 <div id="libraryView">
   <header class="lib-header">
     <h1>Echo <span>Books</span></h1>
-    <button class="btn-import" id="btnImport">＋ 导入书籍</button>
+    <div class="lib-header-actions">
+      <button class="btn-app-settings" id="btnAppSettings" aria-haspopup="dialog">⚙ 设置</button>
+      <button class="btn-import" id="btnImport">＋ 导入书籍</button>
+    </div>
   </header>
   <div class="lib-empty" id="libEmpty" style="display:none">
-    <div class="empty-icon">📖</div>
-    <p>还没有书籍</p>
-    <p class="empty-hint">支持 EPUB / PDF / PPTX — 点击导入或直接拖入</p>
+    <div class="empty-icon" aria-hidden="true">📖</div>
+    <span class="empty-eyebrow">ECHO LIBRARY</span>
+    <h2 class="empty-title">让第一本书落在这里</h2>
+    <p class="empty-hint">拖入文件，或从设备中选择一本书<br>建立你的沉浸式阅读空间</p>
+    <button class="empty-action" id="emptyImport">＋ 导入书籍</button>
+    <span class="empty-formats">EPUB · PDF · PPTX · DOCX</span>
   </div>
   <div id="libSections"></div>
+</div>
+
+<!-- 应用设置 -->
+<div class="app-settings-panel" id="appSettingsPanel" aria-hidden="true">
+  <section class="app-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="appSettingsTitle">
+    <header class="app-settings-head">
+      <div>
+        <h2 id="appSettingsTitle">应用设置</h2>
+        <p>阅读空间与本地偏好</p>
+      </div>
+      <button class="app-settings-close" id="appSettingsClose" aria-label="关闭设置">&times;</button>
+    </header>
+
+    <section class="app-settings-section" aria-labelledby="profileSectionTitle">
+      <div class="app-settings-label" id="profileSectionTitle">用户信息</div>
+      <div class="app-profile-card">
+        <div class="app-avatar" id="appAvatar">阅</div>
+        <div class="app-profile-main">
+          <input class="app-profile-name" id="appProfileName" maxlength="18" value="阅读者" aria-label="用户昵称">
+          <div class="app-profile-meta">本地读者 · 书籍与进度仅保存在此设备</div>
+          <div class="app-profile-stats">
+            <span><b id="appBookCount">0</b> 本书</span>
+            <span><b id="appReadingCount">0</b> 本在读</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="app-settings-section" aria-labelledby="startupSectionTitle">
+      <div class="app-settings-label" id="startupSectionTitle">启动体验</div>
+      <div class="app-settings-list">
+        <div class="app-setting-row">
+          <div class="app-setting-copy">
+            <div class="app-setting-title">跳过开场动画</div>
+            <div class="app-setting-desc">开启后启动应用会直接进入书架</div>
+          </div>
+          <label class="app-switch" aria-label="跳过开场动画">
+            <input type="checkbox" id="skipIntroToggle">
+            <span class="app-switch-track"></span>
+          </label>
+        </div>
+        <div class="app-setting-row">
+          <div class="app-setting-copy">
+            <div class="app-setting-title">开场动画</div>
+            <div class="app-setting-desc">光晕汇聚后流动显现 Echo Books</div>
+          </div>
+          <button class="app-text-btn" id="replayIntroBtn">预览一次</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="app-settings-section" aria-labelledby="versionSectionTitle">
+      <div class="app-settings-label" id="versionSectionTitle">版本管理</div>
+      <div class="app-settings-list">
+        <div class="app-version-row">
+          <div class="app-version-mark">E</div>
+          <div class="app-version-info">
+            <div class="app-version-name" id="appVersionName">Echo Books v1.1</div>
+            <div class="app-version-note" id="appVersionBuild">本地内置版本</div>
+          </div>
+          <button class="app-text-btn" id="checkUpdateBtn">检查更新</button>
+        </div>
+        <div class="app-version-status" id="appVersionStatus" aria-live="polite">当前版本已准备就绪</div>
+      </div>
+    </section>
+
+    <section class="app-settings-section" aria-labelledby="contactSectionTitle">
+      <div class="app-settings-label" id="contactSectionTitle">联系与反馈</div>
+      <div class="app-contact-card">
+        <div class="app-contact-icon" aria-hidden="true">✉</div>
+        <div class="app-contact-main">
+          <div class="app-contact-label">遇到问题或想提出建议？</div>
+          <a class="app-contact-mail" id="contactMail" href="mailto:y011210hx@163.com?subject=Echo%20Books%20%E5%8F%8D%E9%A6%88">y011210hx@163.com</a>
+        </div>
+        <button class="app-text-btn" id="copyEmailBtn">复制邮箱</button>
+      </div>
+    </section>
+  </section>
 </div>
 
 <!-- 阅读器 -->
@@ -286,55 +1140,100 @@
         <button class="btn-font" id="btnSettings">⚙</button>
       </div>
     </div>
-    <!-- 设置面板 -->
-    <div class="settings-panel" id="settingsPanel">
-      <div class="settings-row">
-        <label>亮度</label>
-        <input type="range" id="brightnessSlider" min="20" max="100" value="100">
+  </footer>
+  <!-- 设置面板 — 独立于 footer，避免被 hidden 影响 -->
+  <div class="settings-panel" id="settingsPanel">
+    <button class="sp-close" id="spClose">&times;</button>
+    <!-- 第1行：亮度 + 护眼 -->
+    <div class="sp-row">
+      <div class="sp-card sp-card-wide">
+        <input type="range" class="sp-brightness" id="brightnessSlider" min="20" max="100" value="100">
+        <span class="sp-icon">☀</span>
       </div>
-      <div class="settings-row">
-        <label>字号</label>
-        <input type="range" id="fontSizeSlider" min="70" max="160" step="5" value="100">
-      </div>
-      <div class="settings-row">
-        <label>行距</label>
-        <input type="range" id="lineHeightSlider" min="1.2" max="2.6" step="0.1" value="1.8">
-      </div>
-      <div class="settings-row">
-        <label>边距</label>
-        <input type="range" id="paddingSlider" min="8" max="96" step="4" value="28">
-      </div>
-      <div class="settings-row">
-        <label>风格</label>
-        <button class="theme-btn theme-dark active" data-theme="dark" title="暗色"></button>
-        <button class="theme-btn theme-light" data-theme="light" title="亮色"></button>
-        <button class="theme-btn theme-sepia" data-theme="sepia" title="护眼"></button>
-        <button class="theme-btn theme-night" data-theme="night" title="夜间"></button>
-      </div>
-      <div class="settings-row">
-        <label>动态背景</label>
-        <button class="toggle-btn" id="bgAnimToggle">开</button>
-      </div>
-      <div class="settings-row">
-        <label>海报叠色</label>
-        <button class="toggle-btn" id="tintToggle">开</button>
-      </div>
-      <div class="settings-row">
-        <label>边缘暗角</label>
-        <button class="toggle-btn" id="vignetteToggle">开</button>
+      <div class="sp-card">
+        <span class="sp-label">护眼</span>
+        <div class="sp-toggle" id="eyeProtectToggle"></div>
       </div>
     </div>
-  </footer>
+    <!-- 第2行：字号 A- 数字 A+ + 字体 -->
+    <div class="sp-row">
+      <div class="sp-card sp-card-wide">
+        <button class="sp-font-btn" id="spFontDown">A-</button>
+        <div class="sp-font-nums">
+          <span class="sp-fn-prev" id="fsPrev"></span>
+          <span class="sp-fn-cur" id="fsCur"></span>
+          <span class="sp-fn-next" id="fsNext"></span>
+        </div>
+        <button class="sp-font-btn" id="spFontUp">A+</button>
+      </div>
+      <div class="sp-card">
+        <button class="sp-arrow-btn" id="fontFamilyBtn">系统字体 <span class="arrow">›</span></button>
+      </div>
+    </div>
+    <div class="sp-row" id="pdfModeRow" style="display:none">
+      <div class="sp-card sp-card-wide">
+        <span class="sp-label">PDF 阅读</span>
+        <div class="sp-modes">
+          <button class="sp-mode-btn" id="pdfOriginalBtn" type="button">原版页面</button>
+          <button class="sp-mode-btn" id="pdfTextBtn" type="button">文本重排</button>
+        </div>
+      </div>
+      <div class="sp-card">
+        <span class="sp-label" id="pdfModeHint">可重排</span>
+      </div>
+    </div>
+    <!-- 第3行：背景色圆 + 背景 -->
+    <div class="sp-row">
+      <div class="sp-card sp-card-wide">
+        <div class="sp-bg-circles">
+          <div class="sp-bg-circle active" data-theme="dark" style="background:linear-gradient(135deg,#c8c8d0,#a0a0b0)" title="暗色"></div>
+          <div class="sp-bg-circle" data-theme="sepia" style="background:linear-gradient(135deg,#e8dcc8,#d4c8a8)" title="护眼"></div>
+          <div class="sp-bg-circle" data-theme="light" style="background:linear-gradient(135deg,#f0e8d8,#e8d0a0)" title="亮色"></div>
+          <div class="sp-bg-circle" data-theme="night" style="background:linear-gradient(135deg,#2a2a3a,#0a0a15)" title="夜间"></div>
+        </div>
+      </div>
+      <div class="sp-card">
+        <button class="sp-arrow-btn" id="bgMoreBtn">背景 <span class="arrow">›</span></button>
+      </div>
+    </div>
+    <!-- 第4行：翻页模式 + 间距 -->
+    <div class="sp-row">
+      <div class="sp-card sp-card-wide">
+        <div class="sp-modes">
+          <button class="sp-mode-btn active" data-mode="paginated" title="轻移淡入">覆盖</button>
+          <button class="sp-mode-btn" data-mode="scrolled" title="透视翻页">仿真</button>
+          <button class="sp-mode-btn" data-mode="vertical" title="纵向滑入；EPUB 同时切换为滚动排版">上下</button>
+          <button class="sp-mode-btn" data-mode="none" title="无动画，瞬间切换">无</button>
+        </div>
+      </div>
+      <div class="sp-card">
+        <button class="sp-arrow-btn" id="spacingBtn">间距 <span class="arrow">›</span></button>
+      </div>
+    </div>
+    <!-- 隐藏的行距/边距滑块（间距按钮展开用） -->
+    <div class="sp-row" id="spacingRow" style="display:none">
+      <div class="sp-card sp-card-wide" style="flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <span class="sp-label">行距</span>
+          <input type="range" class="sp-brightness" id="lineHeightSlider" min="1.2" max="2.6" step="0.1" value="1.8" style="flex:1">
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <span class="sp-label">边距</span>
+          <input type="range" class="sp-brightness" id="paddingSlider" min="8" max="96" step="4" value="28" style="flex:1">
+        </div>
+      </div>
+    </div>
+  </div>
   <aside class="toc-panel" id="tocPanel">
     <div class="toc-header"><span id="tocTitle">目录</span><button class="toc-close" id="tocClose">&times;</button></div>
     <div class="toc-list" id="tocList"></div>
   </aside>
 </div>
 
-<div class="drop-overlay" id="dropOverlay"><div class="drop-text">📖 拖入 EPUB / PDF / PPTX</div></div>
+<div class="drop-overlay" id="dropOverlay"><div class="drop-text">📖 拖入 EPUB / PDF / PPTX / DOCX</div></div>
 <div class="loading" id="loading"><div class="spinner"></div><p id="loadingText">正在导入…</p></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="fileInput" accept=".epub,.pdf,.pptx" multiple style="display:none">
+<input type="file" id="fileInput" accept=".epub,.pdf,.pptx,.docx" multiple style="display:none">
 
 <script src="libs/jszip.min.js"></script>
 <script src="libs/epub.min.js"></script>
@@ -352,32 +1251,53 @@ if(typeof pdfjsLib !== 'undefined')
   //  状态
   // ============================================================
   let db = null;
+  const FONT_FAMILIES = [
+    { id:'songti', name:'宋体', css:'"Noto Serif SC","Source Han Serif SC","SimSun",serif' },
+    { id:'heiti', name:'黑体', css:'"Noto Sans SC","Source Han Sans SC","SimHei","Microsoft YaHei",sans-serif' },
+    { id:'kaiti', name:'楷体', css:'"KaiTi","STKaiti","Noto Serif SC",serif' },
+    { id:'system', name:'系统字体', css:'-apple-system,"Microsoft YaHei",sans-serif' },
+  ];
+  const savedFontId = localStorage.getItem('echo-fontfamily') || 'songti';
+  let fontIdx = Math.max(0, FONT_FAMILIES.findIndex(font => font.id === savedFontId));
   let readerState = {
     type: null, bookId: null,
     epubRendition: null, epubBook: null,
     pdfDoc: null, pdfPage: 1,
+    pdfTextMode: localStorage.getItem('echo-pdf-text-mode') !== '0',
+    pdfTextPages: Object.create(null),
     pptxSlides: [], pptxSlide: 0,
-    fontSize: parseInt(localStorage.getItem('echo-fontsize') || '100'),
+    docxParagraphs: [], docxPage: 0,
+    pageMode: localStorage.getItem('echo-page-mode') || 'paginated',
+    fontSize: Math.max(70, Math.min(180, Math.round(parseInt(localStorage.getItem('echo-fontsize') || '100') / 10) * 10)),
     lineHeight: parseFloat(localStorage.getItem('echo-lineheight') || '1.8'),
     pagePadding: parseInt(localStorage.getItem('echo-padding') || '28'),
+    fontFamily: FONT_FAMILIES[fontIdx].css,
   };
   let hideTimer = null;
   let libFeatured = null;
+  let readerCleanupTimer = null;
   const DB_NAME = 'echo-books', STORE = 'books';
+  const CONTACT_EMAIL = 'y011210hx@163.com';
+  const appMeta = { version:'1.1.0', build:'22' };
+  let profileName = (localStorage.getItem('echo-profile-name') || '阅读者').slice(0, 18);
+  let bootHideTimer = null;
+  let appSettingsReturnFocus = null;
 
   // ---- 风格 / 亮度 ----
   const THEMES = {
-    dark:  { bg:'#08080f', text:'#b8b8c4', epubBg:'transparent', epubText:'#b8b8c4', pdfFilter:'none', slideBg:'#10101c', slideText:'#b8b8c4', slideTitle:'#fff' },
-    light: { bg:'#f5f5f0', text:'#333',     epubBg:'#f5f5f0',    epubText:'#333',     pdfFilter:'none', slideBg:'#fff',    slideText:'#333',     slideTitle:'#000' },
-    sepia: { bg:'#f4ecd8', text:'#5b4636',  epubBg:'#f4ecd8',    epubText:'#5b4636',  pdfFilter:'sepia(.3)', slideBg:'#ede0c8', slideText:'#5b4636', slideTitle:'#3a2a1a' },
-    night: { bg:'#000',    text:'#555',     epubBg:'#000',       epubText:'#555',     pdfFilter:'invert(1) hue-rotate(180deg)', slideBg:'#0a0a0a', slideText:'#444', slideTitle:'#666' },
+    dark:  { bg:'#08080f', text:'#b8b8c4', epubBg:'#08080f', epubText:'#b8b8c4', pdfFilter:'none', slideBg:'#10101c', slideText:'#b8b8c4', slideTitle:'#fff', ray:'rgba(255,255,255,.03)' },
+    light: { bg:'#f3f3ed', text:'#303037', epubBg:'#f3f3ed',    epubText:'#303037', pdfFilter:'none', slideBg:'#fff',    slideText:'#303037', slideTitle:'#202027', ray:'rgba(42,40,58,.025)' },
+    sepia: { bg:'#f4ecd8', text:'#5b4636', epubBg:'#f4ecd8',    epubText:'#5b4636', pdfFilter:'sepia(.3)', slideBg:'#ede0c8', slideText:'#5b4636', slideTitle:'#3a2a1a', ray:'rgba(255,250,232,.06)' },
+    night: { bg:'#000',    text:'#7c7c7c', epubBg:'#000',       epubText:'#7c7c7c', pdfFilter:'invert(1) hue-rotate(180deg)', slideBg:'#0a0a0a', slideText:'#666', slideTitle:'#8a8a8a', ray:'rgba(255,255,255,.018)' },
   };
   let currentTheme = localStorage.getItem('echo-theme') || 'dark';
+  if(!THEMES[currentTheme]) currentTheme = 'dark';
   let brightness = parseInt(localStorage.getItem('echo-brightness') || '100');
   // ---- Folia 磁贴墙设置 ----
   let bgAnimOn = localStorage.getItem('echo-bg-anim') !== '0';
   let tintOn = localStorage.getItem('echo-tint') !== '0';
   let vignetteOn = localStorage.getItem('echo-vignette') !== '0';
+  let eyeProtectOn = currentTheme === 'sepia';
 
   // ============================================================
   //  IndexedDB
@@ -406,10 +1326,13 @@ if(typeof pdfjsLib !== 'undefined')
     if(n.endsWith('.epub')) return 'epub';
     if(n.endsWith('.pdf')) return 'pdf';
     if(n.endsWith('.pptx')) return 'pptx';
+    if(n.endsWith('.docx')) return 'docx';
+    if(n.endsWith('.doc')) { showToast('.doc 旧格式不支持，请转换为 .docx'); return null; }
     if(n.endsWith('.ppt')) { showToast('.ppt 旧格式不支持，请转换为 .pptx'); return null; }
     if(file.type === 'application/epub+zip') return 'epub';
     if(file.type === 'application/pdf') return 'pdf';
     if(file.type.includes('presentation')) return 'pptx';
+    if(file.type.includes('wordprocessing') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
     return null;
   }
 
@@ -444,6 +1367,12 @@ if(typeof pdfjsLib !== 'undefined')
           return;
         }
         meta = await importPptxMeta(buf);
+      } else if(type === 'docx'){
+        if(typeof JSZip === 'undefined'){
+          showToast('JSZip 库未加载，请通过启动器打开');
+          return;
+        }
+        meta = await importDocxMeta(buf);
       }
 
       const book = {
@@ -529,6 +1458,24 @@ if(typeof pdfjsLib !== 'undefined')
     return { title, author, cover: null, slideCount, hueData: { hue: h, sat: 0.4, light: 0.2 } };
   }
 
+  // ---- DOCX 元数据 ----
+  async function importDocxMeta(buf){
+    const zip = await JSZip.loadAsync(buf.slice(0));
+    let title = 'Word 文档', author = '';
+    try{
+      const coreXml = await zip.file('docProps/core.xml')?.async('text');
+      if(coreXml){
+        const tm = coreXml.match(/<dc:title[^>]*>([^<]*)<\/dc:title>/);
+        const am = coreXml.match(/<dc:creator[^>]*>([^<]*)<\/dc:creator>/);
+        if(tm && tm[1].trim()) title = tm[1].trim();
+        if(am && am[1].trim()) author = am[1].trim();
+      }
+    }catch(e){}
+    let h = 0;
+    for(let i=0;i<title.length;i++) h = (h*31 + title.charCodeAt(i)) % 360;
+    return { title, author, cover: null, hueData: { hue: h, sat: 0.4, light: 0.2 } };
+  }
+
   async function fetchURL(url){
     try{ const r = await fetch(url); const b = await r.blob(); return await blobToDataURL(b); }catch(e){ return null; }
   }
@@ -600,13 +1547,97 @@ if(typeof pdfjsLib !== 'undefined')
     return slides;
   }
 
+  // ============================================================
+  //  DOCX 解析与渲染
+  // ============================================================
+  async function parseDocx(buf){
+    const zip = await JSZip.loadAsync(buf.slice(0));
+    const docXml = await zip.file('word/document.xml')?.async('text');
+    if(!docXml) return [];
+    // 按段落分割，提取 <w:t> 文本和样式
+    const paragraphs = [];
+    const pMatches = [...docXml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)];
+    for(const pm of pMatches){
+      const pXml = pm[0];
+      // 检测是否是标题（Heading 样式）
+      const styleMatch = pXml.match(/<w:pStyle\s+w:val="([^"]*)"/);
+      const isHeading = styleMatch && /heading/i.test(styleMatch[1]);
+      const headingLevel = isHeading ? parseInt((styleMatch[1].match(/\d/) || [0])[0]) || 1 : 0;
+      // 提取所有 <w:t> 文本
+      const texts = [...pXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => m[1]).join('');
+      if(texts.trim()){
+        paragraphs.push({ text: texts.trim(), heading: headingLevel });
+      }
+    }
+    return paragraphs;
+  }
+
+  function renderDocxPage(paragraphs, pageIdx, total){
+    const el = document.getElementById('slideViewer');
+    const t = THEMES[currentTheme];
+    const fs = readerState.fontSize / 100;
+    const lh = readerState.lineHeight;
+    const pad = Math.max(18, readerState.pagePadding);
+    // DOCX 用连续滚动视图，不分页
+    let html = `<div class="slide-card" style="background:${t.slideBg};box-shadow:0 8px 40px rgba(0,0,0,.4);max-width:860px;margin:0 auto;min-height:auto;aspect-ratio:auto;padding:${pad}px ${Math.round(pad*1.2)}px">`;
+    for(const p of paragraphs){
+      if(p.heading > 0){
+        const hSize = Math.round((28 - p.heading * 3) * fs);
+        html += `<h${Math.min(p.heading, 4)} style="color:${t.slideTitle};font-size:${hSize}px;line-height:${lh};margin:18px 0 8px;font-weight:600;font-family:var(--reader-font,var(--serif))">${esc(p.text)}</h${Math.min(p.heading, 4)}>`;
+      } else {
+        html += `<p style="color:${t.slideText};font-size:${Math.round(16*fs)}px;line-height:${lh};margin-bottom:10px;font-family:var(--reader-font,var(--serif))">${esc(p.text)}</p>`;
+      }
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    document.getElementById('readerChapter').textContent = 'Word 文档';
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('progressText').textContent = '100%';
+    document.getElementById('pageText').textContent = paragraphs.length + ' 段';
+  }
+
+  async function openDocx(stored){
+    document.getElementById('slideViewer').style.display = 'block';
+    readerState.docxParagraphs = await parseDocx(stored.data);
+    readerState.docxPage = 0;
+    renderDocxPage(readerState.docxParagraphs, 0, readerState.docxParagraphs.length);
+    // 目录：列出标题段落
+    const list = document.getElementById('tocList');
+    list.innerHTML = '';
+    readerState.docxParagraphs.forEach((p, i) => {
+      if(p.heading > 0){
+        const el = document.createElement('div');
+        el.className = 'toc-item' + (p.heading > 1 ? ' toc-sub' : '');
+        el.textContent = p.text.slice(0, 30);
+        el.addEventListener('click', ()=>{
+          // 滚动到对应段落
+          const cards = document.querySelectorAll('#slideViewer .slide-card h1, #slideViewer .slide-card h2, #slideViewer .slide-card h3, #slideViewer .slide-card h4');
+          let idx = 0;
+          for(const c of cards){ if(c.textContent === p.text.slice(0,30)) break; idx++; }
+          if(cards[idx]) cards[idx].scrollIntoView({ behavior:'smooth', block:'start' });
+          document.getElementById('tocPanel').classList.remove('open');
+        });
+        list.appendChild(el);
+      }
+    });
+    document.getElementById('tocTitle').textContent = '目录';
+    stored.progress = 1; stored.position = 0;
+    await dbPut(stored);
+  }
+
   function renderPptxSlide(texts, index, total){
     const el = document.getElementById('slideViewer');
     const title = texts[0] || ('Slide ' + (index+1));
     const body = texts.slice(1).map(t => `<p>${esc(t)}</p>`).join('');
     const t = THEMES[currentTheme];
-    el.innerHTML = `<div class="slide-card" style="background:${t.slideBg};box-shadow:0 8px 40px rgba(0,0,0,.4)"><h2 style="color:${t.slideTitle}">${esc(title)}</h2>${body || '<p style="color:#555">（此页无文本内容）</p>'}</div>`;
-    document.querySelectorAll('#slideViewer .slide-card p').forEach(p => p.style.color = t.slideText);
+    const fs = readerState.fontSize / 100;
+    const pad = Math.max(20, readerState.pagePadding);
+    el.innerHTML = `<div class="slide-card" style="background:${t.slideBg};box-shadow:0 8px 40px rgba(0,0,0,.4);font-family:var(--reader-font,var(--serif));padding:${pad}px ${Math.round(pad*1.2)}px"><h2 style="color:${t.slideTitle};font-size:${Math.round(22*fs)}px;line-height:${readerState.lineHeight}">${esc(title)}</h2>${body || '<p style="color:#555">（此页无文本内容）</p>'}</div>`;
+    document.querySelectorAll('#slideViewer .slide-card p').forEach(p => {
+      p.style.color = t.slideText;
+      p.style.fontSize = Math.round(16 * fs) + 'px';
+      p.style.lineHeight = String(readerState.lineHeight);
+    });
     document.getElementById('readerChapter').textContent = '第 ' + (index+1) + ' / ' + total + ' 页';
     document.getElementById('progressFill').style.width = ((index+1)/total*100)+'%';
     document.getElementById('progressText').textContent = Math.round((index+1)/total*100)+'%';
@@ -614,7 +1645,7 @@ if(typeof pdfjsLib !== 'undefined')
   }
 
   // ============================================================
-  //  书架渲染 — Folia 方形海报墙（Lattice 拼贴）
+  //  书架渲染 — Folia 封面拼贴
   // ============================================================
   async function refreshLibrary(){
     const books = await dbGetAll();
@@ -623,57 +1654,56 @@ if(typeof pdfjsLib !== 'undefined')
     const sections = document.getElementById('libSections');
     sections.innerHTML = '';
     empty.style.display = 'none';
+    tileIndex = 0;
     if(!books.length){ empty.style.display='flex'; libHue = null; libFeatured = null; return; }
 
-    // 当前焦点书：只用于背景色相，不影响磁贴大小（所有书一律等大方格）
-    const featured = books.find(b => b.progress > 0) || books[0];
+    // 用户选定的大图优先；否则使用在读或最近加入的书。
+    const selectedId = localStorage.getItem('echo-featured-book');
+    const featured = books.find(b => b.id === selectedId) ||
+      books.find(b => b.progress > 0) || books[0];
     libFeatured = featured;
-
-    // 继续阅读
-    const reading = books.filter(b => b.progress > 0);
-    if(reading.length) renderWall('继续阅读', reading);
-
-    // 全部书架（等大方格网格）
-    renderWall('书架', books);
-
+    const ordered = [featured, ...books.filter(b => b.id !== featured.id)];
+    const sec = document.createElement('div');
+    sec.className = 'lib-section';
+    const wall = document.createElement('div');
+    wall.className = 'lib-wall';
+    if(books.length < 5){
+      wall.classList.add('sparse', 'count-' + books.length);
+    }
+    ordered.forEach((book, index) => wall.appendChild(renderTile(book, index, index === 0)));
+    if(books.length < 5) wall.appendChild(renderAddTile());
+    sec.appendChild(wall);
+    sections.appendChild(sec);
     setLibHue(featured);
     empty.style.display = 'none';
   }
 
-  function renderWall(title, list){
-    const sections = document.getElementById('libSections');
-    const sec = document.createElement('div');
-    sec.className = 'lib-section';
-    let h = document.createElement('h2');
-    h.className = 'lib-section-title';
-    h.textContent = title;
-    const wall = document.createElement('div');
-    wall.className = 'lib-wall';
-    sec.appendChild(h);
-    sec.appendChild(wall);
-    for(const b of list){
-      wall.appendChild(renderTile(b));
-    }
-    sections.appendChild(sec);
-  }
-
-  // 所有书一律渲染为同样大小的方形磁贴（Folia 经典网格）
-  function renderTile(b){
+  let tileIndex = 0;
+  const TILE_SIZES = ['tile-s1','tile-s2','tile-s3','tile-s4','tile-s5'];
+  function renderTile(b, index, featured){
     const el = document.createElement('div');
-    el.className = 'lib-tile';
+    el.className = 'lib-tile slot-' + index + ' ' +
+      (featured ? 'featured' : TILE_SIZES[index % TILE_SIZES.length]);
+    el.style.animationDelay = (Math.min(tileIndex++, 18) * 30) + 'ms';
     const cover = b.cover
       ? `<img src="${b.cover}" alt="${esc(b.title)}">`
       : `<div class="cover-ph" style="background:${placeholderBg(b.title)}">${esc(b.title)}</div>`;
+    const status = featured ? ((b.progress || 0) > 0 ? '继续阅读' : '最近加入') : '';
     el.innerHTML = `
       <div class="tile-cover">
-        <span class="badge ${b.type}">${b.type}</span>
         ${cover}
+        <div class="tile-shade"></div>
+        <span class="badge ${b.type}">${b.type}</span>
+        <span class="tile-order">${String(index + 1).padStart(2,'0')}</span>
         ${b.progress>0 ? `<div class="pbar"><div style="width:${(b.progress*100).toFixed(0)}%"></div></div>`:''}
+        ${featured ? '' : `<button class="set-featured" title="将这本书设为大图" aria-label="将《${esc(b.title)}》设为大图">⤢</button>`}
         <button class="del" data-id="${b.id}">&times;</button>
-      </div>
-      <div class="info">
-        <div class="title">${esc(b.title)}</div>
-        <div class="author">${esc(b.author)}</div>
+        <div class="tile-meta">
+          ${status ? `<span class="tile-status">${status}</span>` : ''}
+          <div class="tile-title">${esc(b.title)}</div>
+          <div class="tile-author">${esc(b.author)}</div>
+        </div>
+        ${featured ? '<span class="tile-resume" aria-hidden="true">↗</span>' : ''}
       </div>`;
     el.addEventListener('mouseenter', ()=> setLibHue(b));
     el.addEventListener('mouseleave', ()=>{ if(libFeatured) setLibHue(libFeatured); });
@@ -682,8 +1712,36 @@ if(typeof pdfjsLib !== 'undefined')
       openReader(b.id);
     });
     el.querySelector('.del').addEventListener('click', async e => {
-      e.stopPropagation(); await dbDelete(b.id); refreshLibrary();
+      e.stopPropagation();
+      if(localStorage.getItem('echo-featured-book') === b.id) localStorage.removeItem('echo-featured-book');
+      await dbDelete(b.id);
+      refreshLibrary();
     });
+    const featureButton = el.querySelector('.set-featured');
+    if(featureButton){
+      featureButton.addEventListener('click', e => {
+        e.stopPropagation();
+        localStorage.setItem('echo-featured-book', b.id);
+        libFeatured = b;
+        refreshLibrary();
+        showToast('已将《' + b.title + '》设为书架大图', true);
+      });
+    }
+    return el;
+  }
+
+  function renderAddTile(){
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'lib-add-tile';
+    el.innerHTML = `
+      <span class="lib-add-glow" aria-hidden="true"></span>
+      <span class="lib-add-plus" aria-hidden="true">＋</span>
+      <span class="lib-add-copy">
+        <strong>扩充你的书架</strong>
+        <small>导入 EPUB · PDF · PPTX · DOCX</small>
+      </span>`;
+    el.addEventListener('click', ()=>document.getElementById('fileInput').click());
     return el;
   }
 
@@ -700,16 +1758,35 @@ if(typeof pdfjsLib !== 'undefined')
   function placeholderBg(t){let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%360;return `linear-gradient(135deg,hsl(${h},35%,22%),hsl(${(h+40)%360},35%,14%))`}
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
+  function releaseReaderResources(){
+    const s = readerState;
+    if(s.epubRendition){ try{s.epubRendition.destroy();}catch(e){} }
+    if(s.epubBook){ try{s.epubBook.destroy();}catch(e){} }
+    if(s.pdfDoc){ try{s.pdfDoc.destroy();}catch(e){} }
+    s.epubRendition = s.epubBook = s.pdfDoc = null;
+    s.pdfTextPages = Object.create(null);
+    s.pptxSlides = [];
+    s.docxParagraphs = [];
+    s.bookId = null;
+    s.type = null;
+    bookHue = null;
+    document.getElementById('epubViewer').innerHTML = '';
+    document.getElementById('slideViewer').innerHTML = '';
+  }
+
   // ============================================================
   //  阅读器 — 统一入口
   // ============================================================
   async function openReader(bookId){
+    clearTimeout(readerCleanupTimer);
+    readerCleanupTimer = null;
+    releaseReaderResources();
     const stored = await dbGet(bookId);
     if(!stored) return;
     readerState.bookId = bookId;
     readerState.type = stored.type;
-    document.getElementById('libraryView').style.display = 'none';
-    document.getElementById('readerView').classList.add('active');
+    syncTypographyControls();
+    const rv = document.getElementById('readerView');
     // 隐藏全部容器
     document.getElementById('epubViewer').style.display = 'none';
     document.getElementById('pdfCanvas').style.display = 'none';
@@ -734,52 +1811,82 @@ if(typeof pdfjsLib !== 'undefined')
       if(stored.type === 'epub') await openEpub(stored);
       else if(stored.type === 'pdf') await openPdf(stored);
       else if(stored.type === 'pptx') await openPptx(stored);
-      // 字号按钮只对 EPUB 显示
-      document.getElementById('btnFontDown').classList.toggle('hidden', stored.type !== 'epub');
-      document.getElementById('btnFontUp').classList.toggle('hidden', stored.type !== 'epub');
+      else if(stored.type === 'docx') await openDocx(stored);
+      // 字号控件对所有格式可见（PDF 用作缩放）
+      updateFontSizeDisplay();
+      syncTypographyControls();
     }catch(e){
       showToast('打开失败：' + (e.message||''));
       console.error('[reader]', e);
-      closeReader();
-    }finally{
       hideLoading();
+      releaseReaderResources();
+      rv.classList.remove('active');
+      rv.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('reader-open');
+      setZoomable(false);
+      return;
     }
+    hideLoading();
+    if(readerState.bookId !== bookId) return;
+    // 内容就绪后再开始入场过渡，避免加载遮罩把动画完全挡住。
+    void rv.offsetWidth;
+    rv.classList.add('active');
+    rv.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('reader-open');
     showUI();
     // 阅读时允许手指缩放（书架保持锁定避免误触）
     setZoomable(true);
   }
 
   // ---- EPUB ----
+  function applyEpubFrameTheme(doc){
+    const d = doc || (()=>{
+      try{ return document.querySelector('#epubViewer iframe')?.contentDocument; }
+      catch(e){ return null; }
+    })();
+    if(!d) return;
+    const t = THEMES[currentTheme];
+    try{
+      d.documentElement.style.background = t.epubBg;
+      if(d.body){
+        d.body.style.background = t.epubBg;
+        d.body.style.color = t.epubText;
+      }
+    }catch(e){}
+    const hostFrame = document.querySelector('#epubViewer iframe');
+    if(hostFrame) hostFrame.style.backgroundColor = t.epubBg;
+  }
+
+  function getEpubThemeRules(theme){
+    const fontFamily = readerState.fontFamily;
+    return {
+      'body': {
+        'background': theme.epubBg + ' !important',
+        'color': theme.epubText,
+        'font-family': fontFamily + ' !important',
+        'font-size': readerState.fontSize + '% !important',
+        'line-height': String(readerState.lineHeight),
+        'padding': '0 ' + readerState.pagePadding + 'px',
+      },
+      'body, body *': { 'font-family': fontFamily + ' !important' },
+      'a': { 'color': '#8b8edb' },
+      'img': { 'max-width': '100%', 'height': 'auto', 'filter': theme.pdfFilter },
+    };
+  }
+
   async function openEpub(stored){
     document.getElementById('epubViewer').style.display = '';
     document.getElementById('epubViewer').innerHTML = '';
     const copy = stored.data.slice(0);
     readerState.epubBook = ePub(copy);
     readerState.epubRendition = readerState.epubBook.renderTo('epubViewer',{
-      flow:'paginated', width:'100%', height:'100%', spread:'none',
+      flow: readerState.pageMode === 'vertical' ? 'scrolled-doc' : 'paginated',
+      width:'100%', height:'100%', spread:'none',
       allowScriptedContent: true
-    });
-    readerState.epubRendition.themes.register('night',{
-      'body':{
-        'background':'transparent !important','color':THEMES[currentTheme].epubText,
-        'font-family':'"Noto Serif SC","SimSun",serif',
-        'font-size': readerState.fontSize + '%','line-height': readerState.lineHeight + '','padding':'0 ' + readerState.pagePadding + 'px',
-      },
-      'a':{ 'color':'#8b8edb' },
-      'img':{ 'max-width':'100%','height':'auto' },
     });
     // 注册全部风格
     for(const tk of ['dark','light','sepia','night']){
-      const tt = THEMES[tk];
-      readerState.epubRendition.themes.register(tk, {
-        'body':{
-          'background':tt.epubBg + ' !important','color':tt.epubText,
-          'font-family':'"Noto Serif SC","SimSun",serif',
-          'font-size': readerState.fontSize + '%','line-height': readerState.lineHeight + '','padding':'0 ' + readerState.pagePadding + 'px',
-        },
-        'a':{ 'color':'#8b8edb' },
-        'img':{ 'max-width':'100%','height':'auto','filter':tt.pdfFilter },
-      });
+      readerState.epubRendition.themes.register(tk, getEpubThemeRules(THEMES[tk]));
     }
     readerState.epubRendition.themes.select(currentTheme);
     readerState.epubRendition.display(stored.position || undefined);
@@ -787,8 +1894,7 @@ if(typeof pdfjsLib !== 'undefined')
       try{
         const d = view.document;
         if(d){
-          d.documentElement.style.background='transparent';
-          d.body.style.background='transparent';
+          applyEpubFrameTheme(d);
           if(!d.documentElement.__swipeBound){
             d.documentElement.__swipeBound = true;
             bindSwipe(d.documentElement, null);
@@ -814,26 +1920,99 @@ if(typeof pdfjsLib !== 'undefined')
 
   // ---- PDF ----
   async function openPdf(stored){
-    document.getElementById('pdfCanvas').style.display = 'block';
     const copy = stored.data.slice(0);
     readerState.pdfDoc = await pdfjsLib.getDocument({ data: copy }).promise;
     readerState.pdfPage = stored.position || 1;
+    readerState.pdfTextPages = Object.create(null);
     await renderPdfPage(stored);
     renderPdfTOC(stored);
     document.getElementById('tocTitle').textContent = '页面';
   }
 
+  async function extractPdfPageText(page){
+    const content = await page.getTextContent();
+    const rows = [];
+    for(const item of content.items){
+      if(!item.str || !item.str.trim()) continue;
+      const x = item.transform[4];
+      const y = item.transform[5];
+      let row = rows.find(candidate => Math.abs(candidate.y - y) < 4);
+      if(!row){
+        row = { y, items: [] };
+        rows.push(row);
+      }
+      row.items.push({ x, width: item.width, text: item.str });
+    }
+    rows.sort((a, b) => b.y - a.y);
+    return rows.map(row => {
+      row.items.sort((a, b) => a.x - b.x);
+      let line = '';
+      let previous = null;
+      for(const item of row.items){
+        if(previous && item.x - (previous.x + previous.width) > 2.4 &&
+          /[A-Za-z0-9]$/.test(line) && /^[A-Za-z0-9]/.test(item.text)){
+          line += ' ';
+        }
+        line += item.text;
+        previous = item;
+      }
+      return line.replace(/\s+/g, ' ').trim();
+    }).filter(Boolean).join('\n');
+  }
+
+  function renderPdfTextPage(text, stored){
+    const canvas = document.getElementById('pdfCanvas');
+    const viewer = document.getElementById('slideViewer');
+    const total = readerState.pdfDoc.numPages;
+    const t = THEMES[currentTheme];
+    const fs = readerState.fontSize / 100;
+    const pad = Math.max(16, readerState.pagePadding);
+    canvas.style.display = 'none';
+    viewer.style.display = 'block';
+    const lines = text ? text.split('\n') : [];
+    const body = lines.length
+      ? lines.map(line => `<p style="font-size:${Math.round(16 * fs)}px;line-height:${readerState.lineHeight}">${esc(line)}</p>`).join('')
+      : '<p style="color:var(--text3);line-height:1.8">此页没有可提取的文字。可以切换到“原版页面”查看扫描内容。</p>';
+    viewer.innerHTML = `
+      <article class="pdf-text-card" style="background:color-mix(in srgb,${t.slideBg} 88%,transparent);padding:${pad}px ${Math.round(pad * 1.2)}px">
+        <div class="pdf-text-kicker">PDF 文本重排 · 第 ${readerState.pdfPage} / ${total} 页</div>
+        ${body}
+      </article>`;
+    viewer.scrollTop = 0;
+    const pct = readerState.pdfPage / total;
+    document.getElementById('progressFill').style.width = (pct * 100) + '%';
+    document.getElementById('progressText').textContent = Math.round(pct * 100) + '%';
+    document.getElementById('pageText').textContent = readerState.pdfPage + ' / ' + total;
+    document.getElementById('readerChapter').textContent = '第 ' + readerState.pdfPage + ' 页';
+    stored.progress = pct;
+    stored.position = readerState.pdfPage;
+    dbPut(stored);
+  }
+
   async function renderPdfPage(stored){
     const page = await readerState.pdfDoc.getPage(readerState.pdfPage);
+    if(readerState.pdfTextMode){
+      let text = readerState.pdfTextPages[readerState.pdfPage];
+      if(text == null){
+        text = await extractPdfPageText(page);
+        readerState.pdfTextPages[readerState.pdfPage] = text;
+      }
+      renderPdfTextPage(text, stored);
+      return;
+    }
+    document.getElementById('slideViewer').style.display = 'none';
+    const canvas = document.getElementById('pdfCanvas');
+    canvas.style.display = 'block';
     const vp1 = page.getViewport({ scale: 1 });
     // 移动端控件是浮层，PDF 可占更多空间；桌面端留出控件余量
     const mH = innerWidth < 768 ? 16 : 120;
     const mV = innerWidth < 768 ? 90 : 180;
     const cssScale = Math.min((innerWidth - mH*2) / vp1.width, (innerHeight - mV) / vp1.height);
+    // fontSize 作为缩放因子（100% = 原始适配大小）
+    const zoomFactor = readerState.fontSize / 100;
     // 按设备像素比渲染，避免高分屏手机上 PDF 模糊
     const dpr = window.devicePixelRatio || 1;
-    const vp = page.getViewport({ scale: Math.max(0.4, cssScale) * dpr });
-    const canvas = document.getElementById('pdfCanvas');
+    const vp = page.getViewport({ scale: Math.max(0.4, cssScale) * zoomFactor * dpr });
     canvas.width = vp.width; canvas.height = vp.height;
     // 用 CSS 像素控制显示尺寸，位图分辨率走设备像素
     canvas.style.width = (vp.width / dpr) + 'px';
@@ -926,46 +2105,58 @@ if(typeof pdfjsLib !== 'undefined')
   // ============================================================
   async function goNext(){
     const s = readerState;
-    if(s.type === 'epub' && s.epubRendition) s.epubRendition.next();
+    if(s.type === 'epub' && s.epubRendition){
+      Promise.resolve(s.epubRendition.next()).then(()=>animatePageTurn('next')).catch(()=>{});
+    }
     else if(s.type === 'pdf' && s.pdfDoc && s.pdfPage < s.pdfDoc.numPages){
       s.pdfPage++; const stored = await dbGet(s.bookId); await renderPdfPage(stored); renderPdfTOC(stored);
+      animatePageTurn('next');
     } else if(s.type === 'pptx' && s.pptxSlide < s.pptxSlides.length - 1){
       s.pptxSlide++;
       renderPptxSlide(s.pptxSlides[s.pptxSlide], s.pptxSlide, s.pptxSlides.length);
       const stored = await dbGet(s.bookId); stored.position = s.pptxSlide; stored.progress = (s.pptxSlide+1)/s.pptxSlides.length; await dbPut(stored);
       openPptx_updateTOC(stored);
+      animatePageTurn('next');
     }
     showUI();
   }
   async function goPrev(){
     const s = readerState;
-    if(s.type === 'epub' && s.epubRendition) s.epubRendition.prev();
+    if(s.type === 'epub' && s.epubRendition){
+      Promise.resolve(s.epubRendition.prev()).then(()=>animatePageTurn('prev')).catch(()=>{});
+    }
     else if(s.type === 'pdf' && s.pdfDoc && s.pdfPage > 1){
       s.pdfPage--; const stored = await dbGet(s.bookId); await renderPdfPage(stored); renderPdfTOC(stored);
+      animatePageTurn('prev');
     } else if(s.type === 'pptx' && s.pptxSlide > 0){
       s.pptxSlide--;
       renderPptxSlide(s.pptxSlides[s.pptxSlide], s.pptxSlide, s.pptxSlides.length);
       const stored = await dbGet(s.bookId); stored.position = s.pptxSlide; stored.progress = (s.pptxSlide+1)/s.pptxSlides.length; await dbPut(stored);
       openPptx_updateTOC(stored);
+      animatePageTurn('prev');
     }
     showUI();
   }
 
   function closeReader(){
-    const s = readerState;
-    if(s.epubRendition){ try{s.epubRendition.destroy();}catch(e){} }
-    if(s.epubBook){ try{s.epubBook.destroy();}catch(e){} }
-    if(s.pdfDoc){ try{s.pdfDoc.destroy();}catch(e){} }
-    s.epubRendition = s.epubBook = s.pdfDoc = null;
-    s.pptxSlides = [];
-    s.bookId = null; s.type = null;
-    bookHue = null;
-    libHue = null;  // 回到书架后让它重新根据悬停/英雄区渲染
-    document.getElementById('readerView').classList.remove('active');
-    document.getElementById('libraryView').style.display = '';
+    const rv = document.getElementById('readerView');
+    if(!rv.classList.contains('active')) return;
+    clearTimeout(hideTimer);
+    rv.classList.remove('active');
+    rv.setAttribute('aria-hidden', 'true');
+    document.getElementById('settingsPanel').classList.remove('show');
+    document.getElementById('tocPanel').classList.remove('open');
+    document.body.classList.remove('reader-open');
+    libHue = null;
+    tileIndex = 0;
     refreshLibrary();
-    // 回到书架后关闭伸缩（避免误触缩放格子）
     setZoomable(false);
+    // 过渡期间保留阅读内容，淡出结束后再释放 EPUB/PDF 资源。
+    clearTimeout(readerCleanupTimer);
+    readerCleanupTimer = setTimeout(()=>{
+      readerCleanupTimer = null;
+      if(!rv.classList.contains('active')) releaseReaderResources();
+    }, 520);
   }
 
   // ============================================================
@@ -987,29 +2178,23 @@ if(typeof pdfjsLib !== 'undefined')
   // 用当前 theme + 最新字号/行距/边距重新应用 EPUB 主题
   function reapplyEpubTheme(){
     if(!readerState.epubRendition) return;
-    const t = THEMES[currentTheme];
-    readerState.epubRendition.themes.register(currentTheme, {
-      'body': {
-        'background': t.epubBg + ' !important',
-        'color': t.epubText,
-        'font-family': '"Noto Serif SC","SimSun",serif',
-        'font-size': readerState.fontSize + '%',
-        'line-height': String(readerState.lineHeight),
-        'padding': '0 ' + readerState.pagePadding + 'px',
-      },
-      'a': { 'color': '#8b8edb' },
-      'img': { 'max-width': '100%', 'height': 'auto', 'filter': t.pdfFilter },
-    });
+    readerState.epubRendition.themes.register(currentTheme, getEpubThemeRules(THEMES[currentTheme]));
     readerState.epubRendition.themes.select(currentTheme);
+    applyEpubFrameTheme();
   }
 
   function applyTheme(theme){
+    if(!THEMES[theme]) return;
     currentTheme = theme;
     localStorage.setItem('echo-theme', theme);
-    // body class
-    document.body.className = theme === 'dark' ? '' : 'theme-' + theme;
-    // 主题按钮高亮
-    document.querySelectorAll('.theme-btn').forEach(b => {
+    // 只替换主题类，保留 tint-on / vignette-on 等独立状态。
+    document.body.classList.remove('theme-light','theme-sepia','theme-night');
+    if(theme !== 'dark') document.body.classList.add('theme-' + theme);
+    document.documentElement.style.colorScheme = theme === 'light' || theme === 'sepia' ? 'light' : 'dark';
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if(themeMeta) themeMeta.setAttribute('content', THEMES[theme].bg);
+    // 背景色圆高亮
+    document.querySelectorAll('.sp-bg-circle').forEach(b => {
       b.classList.toggle('active', b.dataset.theme === theme);
     });
     // EPUB 主题
@@ -1018,12 +2203,25 @@ if(typeof pdfjsLib !== 'undefined')
     }
     // PDF 滤镜
     if(readerState.type === 'pdf'){
-      document.getElementById('pdfCanvas').style.filter = THEMES[theme].pdfFilter;
+      if(readerState.pdfTextMode && readerState.pdfDoc && readerState.bookId){
+        dbGet(readerState.bookId).then(stored => { if(stored) renderPdfPage(stored); });
+      }else{
+        document.getElementById('pdfCanvas').style.filter = THEMES[theme].pdfFilter;
+      }
     }
     // PPTX 卡片
     if(readerState.type === 'pptx' && readerState.pptxSlides.length){
       renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide], readerState.pptxSlide, readerState.pptxSlides.length);
     }
+    // DOCX 也重新渲染以应用新主题色
+    if(readerState.type === 'docx' && readerState.docxParagraphs && readerState.docxParagraphs.length){
+      renderDocxPage(readerState.docxParagraphs, readerState.docxPage, readerState.docxParagraphs.length);
+    }
+    // 同步护眼开关状态
+    const epToggle = document.getElementById('eyeProtectToggle');
+    if(epToggle) epToggle.classList.toggle('on', theme === 'sepia');
+    eyeProtectOn = (theme === 'sepia');
+    scheduleBg();
     console.log('[theme] switched to ' + theme);
   }
 
@@ -1046,18 +2244,42 @@ if(typeof pdfjsLib !== 'undefined')
   function resizeBg(){bgCanvas.width=innerWidth;bgCanvas.height=innerHeight}
   window.addEventListener('resize', resizeBg); resizeBg();
   let bgRafId = null;
+  // 噪点纹理缓存（只生成一次）
+  let noiseCanvas = null;
+  function getNoise(w, h){
+    if(noiseCanvas && noiseCanvas.width === w && noiseCanvas.height === h) return noiseCanvas;
+    noiseCanvas = document.createElement('canvas');
+    noiseCanvas.width = w; noiseCanvas.height = h;
+    const ctx = noiseCanvas.getContext('2d');
+    const img = ctx.createImageData(w, h);
+    for(let i = 0; i < img.data.length; i += 4){
+      const v = Math.random() * 255;
+      img.data[i] = img.data[i+1] = img.data[i+2] = v;
+      img.data[i+3] = 8; // opacity ~0.03
+    }
+    ctx.putImageData(img, 0, 0);
+    return noiseCanvas;
+  }
   function drawBg(){
     bgRafId = null;
     const w = bgCanvas.width, h = bgCanvas.height;
     const reading = document.getElementById('readerView').classList.contains('active');
-    bgCtx.fillStyle = '#08080f'; bgCtx.fillRect(0,0,w,h);
+    const theme = THEMES[currentTheme];
+    const shelf = !reading;
+    bgCtx.fillStyle = shelf ? '#070810' : theme.bg; bgCtx.fillRect(0,0,w,h);
     const animating = bgAnimOn;
     const t = animating ? Date.now() * 0.0002 : 0;
-    const layers = 4;
+    const layers = 6;
     const energy = reading ? 0.9 : 1;
     const spread = animating ? 0.22 : 0.1;
 
-    // 书架时：背景色随书架悬停/磁贴书籍变化（Folia 流动风格）
+    // 对角线光线（微妙）
+    const diag = bgCtx.createLinearGradient(0, 0, w, h);
+    diag.addColorStop(0, shelf ? 'rgba(255,255,255,.035)' : theme.ray);
+    diag.addColorStop(0.5, 'rgba(255,255,255,0)');
+    diag.addColorStop(1, shelf ? 'rgba(255,255,255,.022)' : theme.ray);
+    bgCtx.fillStyle = diag; bgCtx.fillRect(0,0,w,h);
+
     const baseHue = reading && bookHue != null ? bookHue :
                     (!reading && libHue != null ? libHue : hue);
     const baseSat = reading && bookHue != null ? bookSat * 100 :
@@ -1066,25 +2288,27 @@ if(typeof pdfjsLib !== 'undefined')
                       (!reading && libHue != null ? libLight : 9);
 
     for(let i=0;i<layers;i++){
-      const ph = t + i*2.1;
-      const cx = w/2 + Math.cos(ph)*w*spread*energy;
-      const cy = h/2 + Math.sin(ph*0.7)*h*spread*energy;
-      const r = Math.max(50, (w+h)*(0.12+i*0.1));
-      const lh = (baseHue + i*22) % 360;
-      const opacity = (0.35 + i*0.05) * energy;
+      const ph = t + i*1.7;
+      const sizeVar = [0.08, 0.14, 0.22, 0.32, 0.18, 0.10][i];
+      const cx = w/2 + Math.cos(ph)*w*spread*energy*(0.6+i*0.15);
+      const cy = h/2 + Math.sin(ph*0.7)*h*spread*energy*(0.5+i*0.12);
+      const r = Math.max(50, (w+h)*sizeVar);
+      const lh = (baseHue + i*18) % 360;
+      const opacity = (0.20 + i*0.04) * energy;
       const g = bgCtx.createRadialGradient(cx,cy,0,cx,cy,r);
       g.addColorStop(0, `hsla(${lh},${baseSat}%,${baseLight + i*2}%,${opacity})`);
       g.addColorStop(1, 'hsla(0,0%,0%,0)');
       bgCtx.fillStyle = g; bgCtx.fillRect(0,0,w,h);
     }
+    // 噪点纹理
+    try{ bgCtx.drawImage(getNoise(Math.min(w,512), Math.min(h,512)), 0, 0, w, h); }catch(e){}
+
     if(animating){
-      // 非阅读时才自由漂移色相
       if(!reading){
         const target = libHue != null ? libHue : hue;
         hue += (target - hue) * 0.008;
         if(libHue == null && Math.abs(hueTarget - hue) < 0.5) hueTarget = (hue + 30 + Math.random()*40)%360;
       } else {
-        // 阅读时缓慢回到书的色相
         hue += (bookHue - hue)*0.01;
       }
       bgRafId = requestAnimationFrame(drawBg);
@@ -1120,10 +2344,159 @@ if(typeof pdfjsLib !== 'undefined')
     t._timer = setTimeout(() => { t.className = 'toast' + (success ? ' success' : ''); }, 5000);
   }
 
+  // ---- 开机动画 ----
+  function playBootAnimation(force){
+    const overlay = document.getElementById('bootOverlay');
+    if(!overlay) return;
+    clearTimeout(bootHideTimer);
+    if(!force && localStorage.getItem('echo-skip-intro') === '1'){
+      overlay.classList.add('boot-hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    overlay.classList.remove('boot-hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.classList.remove('is-playing');
+    void overlay.offsetWidth;
+    overlay.classList.add('is-playing');
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    bootHideTimer = setTimeout(() => {
+      overlay.classList.add('boot-hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+    }, reduced ? 220 : 3700);
+  }
+
+  // ---- 用户信息 ----
+  function updateProfileUI(){
+    const input = document.getElementById('appProfileName');
+    const avatar = document.getElementById('appAvatar');
+    if(input) input.value = profileName;
+    if(avatar){
+      const first = Array.from(profileName.trim())[0] || '阅';
+      avatar.textContent = first.toUpperCase();
+    }
+  }
+  async function refreshAppStats(){
+    if(!db) return;
+    try{
+      const books = await dbGetAll();
+      document.getElementById('appBookCount').textContent = books.length;
+      document.getElementById('appReadingCount').textContent = books.filter(book => (book.progress || 0) > 0).length;
+    }catch(e){}
+  }
+
+  // ---- 版本信息 ----
+  function renderAppMeta(){
+    document.getElementById('appVersionName').textContent = 'Echo Books v' + appMeta.version;
+    document.getElementById('appVersionBuild').textContent = 'Build ' + appMeta.build + ' · 本地内置版本';
+  }
+  async function loadAppMeta(){
+    try{
+      const response = await fetch('manifest.json', { cache:'no-store' });
+      if(!response.ok) return;
+      const data = await response.json();
+      if(data.version) appMeta.version = String(data.version);
+      const fetchedBuild = Number(data.build);
+      if(Number.isFinite(fetchedBuild) && fetchedBuild >= Number(appMeta.build)){
+        appMeta.build = String(fetchedBuild);
+      }
+      renderAppMeta();
+    }catch(e){}
+  }
+  async function checkForUpdates(){
+    const button = document.getElementById('checkUpdateBtn');
+    const status = document.getElementById('appVersionStatus');
+    button.disabled = true;
+    status.textContent = '正在检查更新…';
+    try{
+      const registration = 'serviceWorker' in navigator
+        ? await navigator.serviceWorker.getRegistration()
+        : null;
+      if(!registration){
+        status.textContent = '当前为离线内置版本；如需更新，请安装新版 APK。';
+        return;
+      }
+      await registration.update();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      status.textContent = registration.waiting
+        ? '发现新版本，重新打开应用后完成更新。'
+        : '已是最新版本（v' + appMeta.version + ' · Build ' + appMeta.build + '）。';
+    }catch(e){
+      status.textContent = '暂时无法连接更新服务，请稍后再试。';
+    }finally{
+      button.disabled = false;
+    }
+  }
+
+  // ---- 应用设置 ----
+  function openAppSettings(){
+    appSettingsReturnFocus = document.activeElement;
+    const panel = document.getElementById('appSettingsPanel');
+    panel.classList.add('show');
+    panel.setAttribute('aria-hidden', 'false');
+    document.getElementById('skipIntroToggle').checked = localStorage.getItem('echo-skip-intro') === '1';
+    updateProfileUI();
+    renderAppMeta();
+    refreshAppStats();
+    setTimeout(() => document.getElementById('appSettingsClose').focus(), 80);
+  }
+  function closeAppSettings(){
+    const panel = document.getElementById('appSettingsPanel');
+    panel.classList.remove('show');
+    panel.setAttribute('aria-hidden', 'true');
+    if(appSettingsReturnFocus && typeof appSettingsReturnFocus.focus === 'function'){
+      appSettingsReturnFocus.focus();
+    }
+    appSettingsReturnFocus = null;
+  }
+  async function copyContactEmail(){
+    let copied = false;
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(CONTACT_EMAIL);
+        copied = true;
+      }
+    }catch(e){}
+    if(!copied){
+      try{
+        const area = document.createElement('textarea');
+        area.value = CONTACT_EMAIL;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        copied = document.execCommand('copy');
+        area.remove();
+      }catch(e){}
+    }
+    showToast(copied ? '邮箱已复制：' + CONTACT_EMAIL : '复制失败，请手动选择邮箱地址', copied);
+  }
+
   // ============================================================
   //  事件
   // ============================================================
+  document.getElementById('btnAppSettings').addEventListener('click', openAppSettings);
+  document.getElementById('appSettingsClose').addEventListener('click', closeAppSettings);
+  document.getElementById('appSettingsPanel').addEventListener('click', e => {
+    if(e.target === document.getElementById('appSettingsPanel')) closeAppSettings();
+  });
+  document.getElementById('appProfileName').addEventListener('input', e => {
+    profileName = e.target.value.slice(0, 18);
+    localStorage.setItem('echo-profile-name', profileName);
+    updateProfileUI();
+  });
+  document.getElementById('skipIntroToggle').addEventListener('change', e => {
+    localStorage.setItem('echo-skip-intro', e.target.checked ? '1' : '0');
+    showToast(e.target.checked ? '下次启动将跳过开场动画' : '下次启动将播放开场动画', true);
+  });
+  document.getElementById('replayIntroBtn').addEventListener('click', () => {
+    closeAppSettings();
+    setTimeout(() => playBootAnimation(true), 120);
+  });
+  document.getElementById('checkUpdateBtn').addEventListener('click', checkForUpdates);
+  document.getElementById('copyEmailBtn').addEventListener('click', copyContactEmail);
   document.getElementById('btnImport').addEventListener('click', ()=>document.getElementById('fileInput').click());
+  document.getElementById('emptyImport').addEventListener('click', ()=>document.getElementById('fileInput').click());
   document.getElementById('fileInput').addEventListener('change', async e=>{
     for(const f of e.target.files) await importFile(f);
     e.target.value = ''; refreshLibrary();
@@ -1135,32 +2508,101 @@ if(typeof pdfjsLib !== 'undefined')
   window.addEventListener('dragover', e=>e.preventDefault());
   window.addEventListener('drop', async e=>{
     e.preventDefault();dragCnt=0;dropOv.classList.remove('show');
-    const files = [...e.dataTransfer.files].filter(f=>/\.(epub|pdf|pptx|ppt)$/i.test(f.name));
+    const files = [...e.dataTransfer.files].filter(f=>/\.(epub|pdf|pptx|docx|ppt)$/i.test(f.name));
     for(const f of files) await importFile(f);
     refreshLibrary();
   });
   document.getElementById('btnBack').addEventListener('click', closeReader);
-  // ---- 字号：滑块 + A−/A＋ 按钮共用一个 setFontSize ----
+  // ---- 真实文字排版：EPUB / DOCX / PPTX / PDF 文本重排 ----
+  function currentFontFamily(){
+    return FONT_FAMILIES[fontIdx] || FONT_FAMILIES[0];
+  }
+  function syncTypographyControls(){
+    const view = document.getElementById('readerView');
+    if(view) view.style.setProperty('--reader-font', readerState.fontFamily);
+    const isPdf = readerState.type === 'pdf';
+    const isPdfRaw = isPdf && !readerState.pdfTextMode;
+    const font = currentFontFamily();
+    const fontFamilyBtn = document.getElementById('fontFamilyBtn');
+    fontFamilyBtn.disabled = isPdfRaw;
+    fontFamilyBtn.innerHTML = isPdfRaw
+      ? 'PDF 原版'
+      : font.name + ' <span class="arrow">›</span>';
+    fontFamilyBtn.title = isPdfRaw
+      ? '原版 PDF 不支持替换内嵌字体；请切换到文本重排'
+      : '切换正文实际字体';
+    document.getElementById('btnFontDown').textContent = isPdfRaw ? '−' : 'A−';
+    document.getElementById('btnFontUp').textContent = isPdfRaw ? '+' : 'A＋';
+    document.getElementById('spFontDown').textContent = isPdfRaw ? '−' : 'A-';
+    document.getElementById('spFontUp').textContent = isPdfRaw ? '+' : 'A+';
+    document.getElementById('btnFontDown').title = isPdfRaw ? '缩小 PDF 原版页面' : '减小正文字号';
+    document.getElementById('btnFontUp').title = isPdfRaw ? '放大 PDF 原版页面' : '增大正文字号';
+    document.getElementById('pdfModeRow').style.display = isPdf ? '' : 'none';
+    document.getElementById('pdfOriginalBtn').classList.toggle('active', isPdfRaw);
+    document.getElementById('pdfTextBtn').classList.toggle('active', isPdf && !isPdfRaw);
+    document.getElementById('pdfModeHint').textContent = isPdfRaw ? '原版缩放' : '文字可重排';
+    const spacingBtn = document.getElementById('spacingBtn');
+    spacingBtn.disabled = isPdfRaw;
+    spacingBtn.title = isPdfRaw ? '切换到文本重排后可调整行距和边距' : '调整行距和边距';
+    if(isPdfRaw) document.getElementById('spacingRow').style.display = 'none';
+    applyPageMode();
+    updateBgButton();
+  }
+  function updateFontSizeDisplay(){
+    const v = readerState.fontSize;
+    const step = 10;
+    const prev = document.getElementById('fsPrev');
+    const cur = document.getElementById('fsCur');
+    const next = document.getElementById('fsNext');
+    if(prev) prev.textContent = Math.max(70, v - step) + '%';
+    if(cur) cur.textContent = v + '%';
+    if(next) next.textContent = Math.min(180, v + step) + '%';
+  }
   function setFontSize(v){
-    readerState.fontSize = Math.max(70, Math.min(160, Math.round(v)));
+    readerState.fontSize = Math.max(70, Math.min(180, Math.round(v / 10) * 10));
     localStorage.setItem('echo-fontsize', String(readerState.fontSize));
-    const slider = document.getElementById('fontSizeSlider');
-    if(slider) slider.value = readerState.fontSize;
-    if(readerState.epubRendition) readerState.epubRendition.themes.fontSize(readerState.fontSize+'%');
+    updateFontSizeDisplay();
+    // EPUB：重新注入文字字号，而不是缩放 iframe。
+    if(readerState.epubRendition) reapplyEpubTheme();
+    // PPTX / DOCX：按新字号重新计算文字排版。
+    if(readerState.type === 'pptx' && readerState.pptxSlides.length){
+      renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide], readerState.pptxSlide, readerState.pptxSlides.length);
+    }
+    if(readerState.type === 'docx' && readerState.docxParagraphs && readerState.docxParagraphs.length){
+      renderDocxPage(readerState.docxParagraphs, readerState.docxPage, readerState.docxParagraphs.length);
+    }
+    // PDF：固定版式没有可重排文字，只能缩放渲染画布。
+    if(readerState.type === 'pdf' && readerState.pdfDoc){
+      dbGet(readerState.bookId).then(s => { if(s) renderPdfPage(s); });
+    }
   }
   document.getElementById('btnFontUp').addEventListener('click', ()=> setFontSize(readerState.fontSize + 10));
   document.getElementById('btnFontDown').addEventListener('click', ()=> setFontSize(readerState.fontSize - 10));
-  document.getElementById('fontSizeSlider').addEventListener('input', e => setFontSize(parseInt(e.target.value)));
-  // ---- 行距 / 边距（EPUB）----
+  // 设置面板里的 A+/A- 也绑定
+  document.getElementById('spFontUp').addEventListener('click', ()=> setFontSize(readerState.fontSize + 10));
+  document.getElementById('spFontDown').addEventListener('click', ()=> setFontSize(readerState.fontSize - 10));
+  function reflowCurrentTextLayout(){
+    if(readerState.epubRendition) reapplyEpubTheme();
+    if(readerState.type === 'pptx' && readerState.pptxSlides.length){
+      renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide], readerState.pptxSlide, readerState.pptxSlides.length);
+    }
+    if(readerState.type === 'docx' && readerState.docxParagraphs.length){
+      renderDocxPage(readerState.docxParagraphs, readerState.docxPage, readerState.docxParagraphs.length);
+    }
+    if(readerState.type === 'pdf' && readerState.pdfTextMode && readerState.pdfDoc && readerState.bookId){
+      dbGet(readerState.bookId).then(stored => { if(stored) renderPdfPage(stored); });
+    }
+  }
+  // ---- 行距 / 边距 ----
   function setLineHeight(v){
     readerState.lineHeight = Math.max(1.2, Math.min(2.6, Math.round(v*10)/10));
     localStorage.setItem('echo-lineheight', String(readerState.lineHeight));
-    reapplyEpubTheme();
+    reflowCurrentTextLayout();
   }
   function setPadding(v){
     readerState.pagePadding = Math.max(8, Math.min(96, Math.round(v/4)*4));
     localStorage.setItem('echo-padding', String(readerState.pagePadding));
-    reapplyEpubTheme();
+    reflowCurrentTextLayout();
   }
   document.getElementById('lineHeightSlider').addEventListener('input', e => setLineHeight(parseFloat(e.target.value)));
   document.getElementById('paddingSlider').addEventListener('input', e => setPadding(parseInt(e.target.value)));
@@ -1183,52 +2625,144 @@ if(typeof pdfjsLib !== 'undefined')
       openPptx_updateTOC(stored);
     }
   });
-  // ===== 设置面板 =====
+  // ===== 设置面板（截图同款全屏面板） =====
   document.getElementById('btnSettings').addEventListener('click', e => {
     e.stopPropagation();
     document.getElementById('settingsPanel').classList.toggle('show');
   });
-  document.getElementById('settingsPanel').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('spClose').addEventListener('click', ()=>{
+    document.getElementById('settingsPanel').classList.remove('show');
+  });
+  document.getElementById('settingsPanel').addEventListener('click', e => {
+    if(e.target === document.getElementById('settingsPanel'))
+      document.getElementById('settingsPanel').classList.remove('show');
+  });
+  // 亮度
   document.getElementById('brightnessSlider').addEventListener('input', e => {
     applyBrightness(parseInt(e.target.value));
   });
-  document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
-  });
-
-  // ===== Folia 磁贴墙设置：动态背景 / 海报叠色 / 边缘暗角 =====
-  function applyWallPrefs(){
-    document.body.classList.toggle('tint-on', tintOn);
-    document.body.classList.toggle('vignette-on', vignetteOn);
-    const bgBtn = document.getElementById('bgAnimToggle');
-    const tintBtn = document.getElementById('tintToggle');
-    const vigBtn = document.getElementById('vignetteToggle');
-    bgBtn.textContent = bgAnimOn ? '开' : '关';
-    bgBtn.classList.toggle('on', bgAnimOn);
-    tintBtn.textContent = tintOn ? '开' : '关';
-    tintBtn.classList.toggle('on', tintOn);
-    vigBtn.textContent = vignetteOn ? '开' : '关';
-    vigBtn.classList.toggle('on', vignetteOn);
+  // 护眼开关（sepia 主题快捷切换）
+  function updateEyeProtect(){
+    const el = document.getElementById('eyeProtectToggle');
+    el.classList.toggle('on', eyeProtectOn);
   }
-  document.getElementById('bgAnimToggle').addEventListener('click', ()=>{
+  document.getElementById('eyeProtectToggle').addEventListener('click', ()=>{
+    eyeProtectOn = !eyeProtectOn;
+    if(eyeProtectOn) applyTheme('sepia');
+    else if(currentTheme === 'sepia') applyTheme('dark');
+    updateEyeProtect();
+  });
+  // 背景色圆
+  document.querySelectorAll('.sp-bg-circle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.dataset.theme);
+      document.querySelectorAll('.sp-bg-circle').forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme));
+      eyeProtectOn = currentTheme === 'sepia';
+      updateEyeProtect();
+    });
+  });
+  // 间距按钮展开/收起行距边距滑块
+  document.getElementById('spacingBtn').addEventListener('click', ()=>{
+    if(readerState.type === 'pdf' && !readerState.pdfTextMode){
+      showToast('切换到“文本重排”后才能调整行距和边距');
+      return;
+    }
+    const row = document.getElementById('spacingRow');
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+  });
+  async function setPdfReadingMode(textMode){
+    if(readerState.type !== 'pdf' || !readerState.pdfDoc) return;
+    readerState.pdfTextMode = !!textMode;
+    localStorage.setItem('echo-pdf-text-mode', readerState.pdfTextMode ? '1' : '0');
+    syncTypographyControls();
+    const stored = await dbGet(readerState.bookId);
+    if(stored) await renderPdfPage(stored);
+  }
+  document.getElementById('pdfOriginalBtn').addEventListener('click', ()=>setPdfReadingMode(false));
+  document.getElementById('pdfTextBtn').addEventListener('click', ()=>setPdfReadingMode(true));
+
+  function animatePageTurn(direction){
+    const mode = readerState.pageMode;
+    if(mode === 'none') return;
+    const target = readerState.type === 'pdf' && !readerState.pdfTextMode
+      ? document.getElementById('pdfCanvas')
+      : readerState.type === 'epub'
+        ? document.getElementById('epubViewer')
+        : document.getElementById('slideViewer');
+    if(!target) return;
+    [...target.classList].filter(name => name.startsWith('page-turn-')).forEach(name => target.classList.remove(name));
+    void target.offsetWidth;
+    target.classList.add('page-turn-' + mode + '-' + direction);
+    setTimeout(()=>{
+      target.classList.remove('page-turn-' + mode + '-' + direction);
+    }, 520);
+  }
+  function applyPageMode(){
+    localStorage.setItem('echo-page-mode', readerState.pageMode);
+    document.querySelectorAll('.sp-mode-btn[data-mode]').forEach(button => {
+      button.classList.toggle('active', button.dataset.mode === readerState.pageMode);
+    });
+    if(readerState.type === 'epub' && readerState.epubRendition &&
+      typeof readerState.epubRendition.flow === 'function'){
+      try{
+        readerState.epubRendition.flow(readerState.pageMode === 'vertical' ? 'scrolled-doc' : 'paginated');
+      }catch(e){}
+    }
+  }
+  // 翻页模式：覆盖、仿真、上下和无动画。
+  document.querySelectorAll('.sp-mode-btn').forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      if(!btn.dataset.mode) return;
+      readerState.pageMode = btn.dataset.mode;
+      applyPageMode();
+    });
+  });
+  // 字体按钮：修改文字实际使用的 font-family，并跨翻页/主题切换保持。
+  document.getElementById('fontFamilyBtn').addEventListener('click', ()=>{
+    if(readerState.type === 'pdf' && !readerState.pdfTextMode) return;
+    fontIdx = (fontIdx + 1) % FONT_FAMILIES.length;
+    const f = currentFontFamily();
+    readerState.fontFamily = f.css;
+    localStorage.setItem('echo-fontfamily', f.id);
+    syncTypographyControls();
+    if(readerState.epubRendition) reapplyEpubTheme();
+    if(readerState.type === 'pptx' && readerState.pptxSlides.length){
+      renderPptxSlide(readerState.pptxSlides[readerState.pptxSlide], readerState.pptxSlide, readerState.pptxSlides.length);
+    }
+    if(readerState.type === 'docx' && readerState.docxParagraphs.length){
+      renderDocxPage(readerState.docxParagraphs, readerState.docxPage, readerState.docxParagraphs.length);
+    }
+    if(readerState.type === 'pdf' && readerState.pdfTextMode && readerState.pdfDoc && readerState.bookId){
+      dbGet(readerState.bookId).then(stored => { if(stored) renderPdfPage(stored); });
+    }
+  });
+  // 背景按钮：切换动态背景开关
+  function updateBgButton(){
+    const button = document.getElementById('bgMoreBtn');
+    if(!button) return;
+    button.innerHTML = (bgAnimOn ? '动态背景' : '静态背景') + ' <span class="arrow">›</span>';
+    button.title = bgAnimOn ? '动态背景已开启，点击切换为静态' : '静态背景已开启，点击切换为动态';
+  }
+  document.getElementById('bgMoreBtn').addEventListener('click', ()=>{
     bgAnimOn = !bgAnimOn;
     localStorage.setItem('echo-bg-anim', bgAnimOn ? '1' : '0');
-    applyWallPrefs();
     scheduleBg();
-  });
-  document.getElementById('tintToggle').addEventListener('click', ()=>{
-    tintOn = !tintOn;
-    localStorage.setItem('echo-tint', tintOn ? '1' : '0');
-    applyWallPrefs();
-  });
-  document.getElementById('vignetteToggle').addEventListener('click', ()=>{
-    vignetteOn = !vignetteOn;
-    localStorage.setItem('echo-vignette', vignetteOn ? '1' : '0');
-    applyWallPrefs();
+    updateBgButton();
   });
 
   document.addEventListener('keydown', e=>{
     if(e.key==='Escape'){
+      const bootOverlay = document.getElementById('bootOverlay');
+      if(!bootOverlay.classList.contains('boot-hidden')){
+        clearTimeout(bootHideTimer);
+        bootOverlay.classList.add('boot-hidden');
+        bootOverlay.setAttribute('aria-hidden', 'true');
+        return;
+      }
+      if(document.getElementById('appSettingsPanel').classList.contains('show')){
+        closeAppSettings();
+        return;
+      }
       if(document.getElementById('readerView').classList.contains('active')){
         // 阅读页：ESC 逐级返回（目录 → 设置 → 书架）
         if(document.getElementById('tocPanel').classList.contains('open')) document.getElementById('tocPanel').classList.remove('open');
@@ -1337,19 +2871,30 @@ if(typeof pdfjsLib !== 'undefined')
     }, e => console.warn('[sw] failed:', e));
   }
 
+  updateProfileUI();
+  renderAppMeta();
+  loadAppMeta();
+  playBootAnimation(false);
+
   openDB().then(()=>{
     // 应用保存的风格和亮度
     applyTheme(currentTheme);
     applyBrightness(brightness);
-    applyWallPrefs();
+    // tint/vignette 默认开启（旧开关已移除，保持 Folia 效果）
+    document.body.classList.toggle('tint-on', tintOn);
+    document.body.classList.toggle('vignette-on', vignetteOn);
     document.getElementById('brightnessSlider').value = brightness;
-    document.getElementById('fontSizeSlider').value = readerState.fontSize;
+    updateFontSizeDisplay();
+    syncTypographyControls();
+    updateEyeProtect();
+    // 背景色圆高亮当前主题
+    document.querySelectorAll('.sp-bg-circle').forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme));
     document.getElementById('lineHeightSlider').value = readerState.lineHeight;
     document.getElementById('paddingSlider').value = readerState.pagePadding;
     refreshLibrary();
     if(typeof ePub === 'undefined') showToast('epub.js 未加载，EPUB 功能不可用');
     if(typeof pdfjsLib === 'undefined') showToast('pdf.js 未加载，PDF 功能不可用');
-    if(typeof JSZip === 'undefined') showToast('JSZip 未加载，PPTX 功能不可用');
+    if(typeof JSZip === 'undefined') showToast('JSZip 未加载，PPTX/DOCX 功能不可用');
   });
 
 })();

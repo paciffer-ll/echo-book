@@ -1,5 +1,5 @@
-// Echo Books Service Worker — v2：页面走网络（保证更新），静态库走缓存（保证离线）
-const CACHE = 'echo-books-v2';
+// Echo Books Service Worker — v5：页面走网络（保证更新），静态库走缓存（保证离线）
+const CACHE = 'echo-books-v5';
 const STATIC_ASSETS = [
   'manifest.json',
   'libs/jszip.min.js',
